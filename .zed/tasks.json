@@ -1,0 +1,58 @@
+[
+  {
+    "label": "Dev: Frontend",
+    "command": "npm run dev",
+    "cwd": "$ZED_WORKTREE_ROOT/frontend",
+    "use_new_terminal": true,
+    "allow_concurrent_runs": false
+  },
+  {
+    "label": "Dev: Backend",
+    "command": "cargo run -p backend",
+    "cwd": "$ZED_WORKTREE_ROOT",
+    "use_new_terminal": true,
+    "allow_concurrent_runs": false
+  },
+  {
+    "label": "Check: All",
+    "command": "cargo fmt --all --check && cargo clippy --workspace --all-targets --all-features -- -D warnings && cargo test --workspace && npm --prefix frontend run check",
+    "cwd": "$ZED_WORKTREE_ROOT",
+    "use_new_terminal": true,
+    "allow_concurrent_runs": false
+  },
+  {
+    "label": "Check: Rust",
+    "command": "cargo fmt --all --check && cargo clippy --workspace --all-targets --all-features -- -D warnings && cargo test --workspace",
+    "cwd": "$ZED_WORKTREE_ROOT",
+    "use_new_terminal": true,
+    "allow_concurrent_runs": false
+  },
+  {
+    "label": "Check: Frontend",
+    "command": "npm run check",
+    "cwd": "$ZED_WORKTREE_ROOT/frontend",
+    "use_new_terminal": true,
+    "allow_concurrent_runs": false
+  },
+  {
+    "label": "Format: All",
+    "command": "cargo fmt --all && npm --prefix frontend run format",
+    "cwd": "$ZED_WORKTREE_ROOT",
+    "use_new_terminal": true,
+    "allow_concurrent_runs": false
+  },
+  {
+    "label": "Test: Rust",
+    "command": "cargo test --workspace",
+    "cwd": "$ZED_WORKTREE_ROOT",
+    "use_new_terminal": true,
+    "allow_concurrent_runs": false
+  },
+  {
+    "label": "Build: Frontend",
+    "command": "npm run build",
+    "cwd": "$ZED_WORKTREE_ROOT/frontend",
+    "use_new_terminal": true,
+    "allow_concurrent_runs": false
+  }
+]
