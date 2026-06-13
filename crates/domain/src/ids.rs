@@ -9,6 +9,7 @@ macro_rules! define_id {
         #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
         pub struct $name(Uuid);
 
+        #[allow(clippy::new_without_default)]
         impl $name {
             /// Cоздает новый уникальный идентификатор.
             #[must_use]
