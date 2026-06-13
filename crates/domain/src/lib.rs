@@ -1,5 +1,4 @@
-pub mod ids {
-    pub use shared::ids::*;
-}
+pub mod customer;
+pub mod ids;
 
 pub use ids::*;
