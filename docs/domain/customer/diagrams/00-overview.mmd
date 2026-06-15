@@ -1,0 +1,40 @@
+%% Customer Domain diagram split overview.
+%% Source of truth: ../customer.md
+%% Navigation overview only. Detailed model content remains in the split files
+%% and the original source schema.
+
+flowchart LR
+    SOT["customer.md - Source of Truth"]
+
+    D01["01-customer-lifecycle.mmd - Customer Lifecycle"]
+    D02["02-contact-book.mmd - Contact Book"]
+    D03["03-profile.mmd - Profile"]
+    D04["04-preferences.mmd - Preferences"]
+    D05["05-consent-ledger.mmd - Consent Ledger"]
+    D06["06-eventing-audit.mmd - Eventing and Audit"]
+    D07["07-activation-flow.mmd - Activation Flow"]
+    D08["08-identity-registry.mmd - Identity Registry"]
+    D09["09-application-consistency.mmd - Application Consistency"]
+    D10["10-access-auth-readside.mmd - Access Auth Read-side"]
+
+    SOT --> D01
+    SOT --> D02
+    SOT --> D03
+    SOT --> D04
+    SOT --> D05
+    SOT --> D06
+    SOT --> D07
+    SOT --> D08
+    SOT --> D09
+    SOT --> D10
+
+    D01 -.-> D06
+    D01 -.-> D07
+    D02 -.-> D08
+    D02 -.-> D09
+    D04 -.-> D06
+    D05 -.-> D07
+    D06 -.-> D09
+    D07 -.-> D09
+    D10 -.-> D06
+    D10 -.-> D09

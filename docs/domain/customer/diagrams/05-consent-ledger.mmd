@@ -1,0 +1,53 @@
+%% Customer consent ledger diagram.
+%% Source of truth: ../customer.md
+%% This file physically copies only the ConsentLedger slice.
+%% External entities are referenced by links only and remain defined in the
+%% source schema until their own detailed diagram files are populated.
+%% ConsentGrant and ConsentRevocation are referenced exactly as in the source
+%% EffectiveConsent state machine; the source Mermaid schema does not define
+%% separate class blocks for them.
+
+classDiagram
+    direction LR
+
+    %% Consent bounded context
+    class CustomerConsentLedger {
+        <<SeparateAggregateRoot>>
+        -CustomerId customer_id
+        -Map~ConsentKind_EffectiveConsent~ effective
+        -AggregateVersion version
+        -Vec~PendingConsentEvent~ pending_events
+        +grant_consent(grant, ctx) DomainResult
+        +revoke_consent(kind, revocation, ctx) DomainResult
+    }
+    class ConsentKind {
+        <<Enum>>
+        TermsOfService
+        PrivacyPolicy
+        DataProcessing
+        Marketing
+    }
+    class EffectiveConsent {
+        <<EnumStateMachine>>
+        NotGranted
+        Granted(ConsentGrant)
+        Revoked(ConsentGrant, ConsentRevocation)
+    }
+    CustomerConsentLedger *-- EffectiveConsent
+    CustomerConsentLedger *-- ConsentKind
+
+    class ConsentLedgerInvariants {
+        <<Invariants>>
+        grant_has_document_version_source_time_and_actor
+        revocation_preserves_grant_history
+        revoked_is_never_effectively_granted
+        marketing_is_optional_and_independent
+        effective_consent_has_no_impossible_state
+        ledger_is_append_and_audit_friendly
+        NoChange_emits_nothing_and_preserves_version
+    }
+
+    CustomerConsentLedger ..> ConsentLedgerInvariants : grant_consent revoke_consent
+    CustomerConsentLedger ..> DomainResult : command result
+    CustomerActivationApplicationService --> CustomerConsentLedgerRepository : load
+    CustomerCommunicationEligibilityProjection ..> CustomerConsentLedger : projects consent events

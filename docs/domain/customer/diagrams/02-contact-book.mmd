@@ -1,0 +1,117 @@
+%% Customer contact book aggregate diagram.
+%% Source of truth: ../customer.md
+%% This file physically copies only the Contact Book slice.
+%% External entities are referenced by links only and remain defined in the
+%% source schema until their own detailed diagram files are populated.
+
+classDiagram
+    direction LR
+
+    %% Independent contact aggregate
+    class CustomerContactBook {
+        <<AggregateRoot>>
+        -CustomerId customer_id
+        -Option~PhoneContact~ phone
+        -Option~EmailContact~ email
+        -Option~TelegramContact~ telegram
+        -Option~PrimaryContact~ primary
+        -AggregateVersion version
+        -Vec~PendingContactEvent~ pending_events
+        +add_phone(phone, reservation_proof, ctx) Result~ChangeOutcome, ContactError~
+        +change_phone(command, reservation_proof, ctx) Result~ChangeOutcome, ContactError~
+        +verify_phone(proof, ctx) Result~ChangeOutcome, ContactError~
+        +remove_phone(replacement_primary, ctx) Result~ChangeOutcome, ContactError~
+        +add_email(email, reservation_proof, ctx) Result~ChangeOutcome, ContactError~
+        +change_email(command, reservation_proof, ctx) Result~ChangeOutcome, ContactError~
+        +verify_email(proof, ctx) Result~ChangeOutcome, ContactError~
+        +remove_email(replacement_primary, ctx) Result~ChangeOutcome, ContactError~
+        +link_telegram(link, reservation_proof, ctx) Result~ChangeOutcome, ContactError~
+        +unlink_telegram(replacement_primary, ctx) Result~ChangeOutcome, ContactError~
+        +change_primary(primary, ctx) Result~ChangeOutcome, ContactError~
+    }
+
+    class PhoneContact {
+        <<ValueObject>>
+        +PhoneNumber number
+        +VerificationStatus verification
+    }
+    class EmailContact {
+        <<ValueObject>>
+        +EmailAddress address
+        +VerificationStatus verification
+    }
+    class TelegramContact {
+        <<ValueObject>>
+        +TelegramUserId user_id
+        +Option~TelegramUsername~ username
+        +DateTime~Utc~ linked_at
+        +VerificationStatus verification
+        +Option~DateTime_Utc~ last_seen_at
+    }
+    class PrimaryContact {
+        <<ValidatedValueObject>>
+        Phone
+        Email
+        Telegram
+    }
+    class VerificationStatus {
+        <<Enum>>
+        Unverified
+        Verified(VerifiedAt)
+    }
+
+    class ContactBookInvariants {
+        <<Invariants>>
+        primary_references_existing_contact
+        primary_removal_requires_replacement
+        primary_is_verified_when_required
+        phone_or_email_change_resets_verification
+        telegram_relink_resets_verification_without_proof
+        contact_uniqueness_delegated_to_IdentityRegistry
+        global_identity_change_requires_reservation_proof
+        reservation_proof_must_match_new_contact
+        reservation_proof_must_belong_to_same_customer
+        expired_reservation_proof_is_rejected
+        reserve_new_identity_before_releasing_old
+        failed_reservation_leaves_state_unchanged
+        old_identity_is_not_released_before_contactbook_commit
+        contactbook_never_claims_or_releases_identity
+        failed_contactbook_commit_leaves_registry_reservation_to_expire_or_cancel
+        NoChange_emits_nothing_and_preserves_version
+        contact_book_never_mutates_customer_lifecycle
+    }
+    class ContactError {
+        <<DomainErrorEnum>>
+        ReservationProofRequired
+        ReservationProofCustomerMismatch
+        ReservationProofIdentityMismatch
+        ReservationProofExpired
+        PrimaryContactWouldBeMissing
+        PrimaryContactMustBeVerified
+        ContactNotFound
+    }
+
+    CustomerContactBook *-- PhoneContact
+    CustomerContactBook *-- EmailContact
+    CustomerContactBook *-- TelegramContact
+    CustomerContactBook *-- PrimaryContact
+    CustomerContactBook ..> IdentityReservationProof : required for unique identity mutation
+    CustomerContactBook ..> ContactBookInvariants : add change verify remove contacts and change_primary
+    CustomerContactBook ..> DomainResult : command result
+    CustomerContactBook ..> ContactError : returns
+    CustomerContactBook *-- "0..*" PendingContactEvent : records immutable copy
+    CustomerContactBook ..> IdentityReservationProof : validates reservation intent locally
+
+    CustomerContactApplicationService --> CustomerRepository : loads lifecycle snapshot
+    CustomerContactApplicationService --> CustomerContactBookRepository : loads and saves contact book
+    CustomerContactApplicationService --> ContactLifecyclePolicy : checks Active customer rule
+    CustomerContactApplicationService --> UnitOfWork : commits contact replacement
+    CustomerContactApplicationService --> IdentityNormalizer : normalizes requested identity
+    CustomerContactApplicationService --> IdentityRegistry : reserves identity before mutation
+    CustomerContactApplicationService --> IdentityOutbox : atomically enqueues claim and release
+    CustomerContactApplicationService --> IdentityReservationProof : passes proof to contact book
+    CustomerContactApplicationService ..> ContactApplicationError : maps use case failures
+    ContactLifecyclePolicy ..> CustomerActivationSnapshot : reads lifecycle snapshot
+    ContactLifecyclePolicy ..> ContactEligibilitySnapshot : reads contact snapshot
+    ContactLifecyclePolicy ..> ContactBookInvariants : removing last contact when Active is cross aggregate
+    CustomerContactAvailabilityProjection ..> CustomerContactBook : projects verified contact events

@@ -1,0 +1,154 @@
+%% Application consistency and orchestration diagram.
+%% Source of truth: ../customer.md
+%% This file physically copies only the Application Services, Contact Flow,
+%% UnitOfWork, Optimistic Lock, Repositories, and application consistency slice.
+%% External entities are referenced by links only and remain defined in the
+%% source schema until their own detailed diagram files are populated.
+
+classDiagram
+    direction LR
+
+    %% Application layer is responsible for orchestration.
+    %% It loads aggregates, invokes the policy, invokes Customer.activate,
+    %% executes UnitOfWork and commits the consistency boundary.
+    class CustomerActivationApplicationService {
+        <<ApplicationService>>
+        +activate(command) Result~ChangeOutcome, ActivationApplicationError~
+    }
+
+    %% Contact application orchestrates normalize -> reserve -> load -> domain change.
+    %% UnitOfWork saves ContactBook and outbox records with optimistic locking.
+    %% Outbox dispatches claim before release only after a successful commit.
+    %% Failed commit leaves the reservation to explicit cancel or TTL expiry.
+    class CustomerContactApplicationService {
+        <<ApplicationService>>
+        +remove_contact(command) Result~ChangeOutcome, ContactApplicationError~
+        +add_or_replace_identity(command) Result~ChangeOutcome, ContactApplicationError~
+    }
+    class ContactLifecyclePolicy {
+        <<CrossAggregateDomainPolicy>>
+        +can_remove_contact(customer_snapshot, contact_snapshot, replacement) Result~void, CrossAggregateInvariantViolation~
+        Draft_may_exist_without_verified_contact
+        Active_cannot_lose_last_or_verified_primary_contact
+    }
+    class CustomerRepository {
+        <<Port>>
+        +load(customer_id) Versioned~Customer~
+        +save(customer, expected_version) Result~void, OptimisticLockFailed~
+    }
+    class CustomerContactBookRepository {
+        <<Port>>
+        +load(customer_id) Versioned~CustomerContactBook~
+        +save(contact_book, expected_version) Result~void, OptimisticLockFailed~
+    }
+    class CustomerConsentLedgerRepository {
+        <<Port>>
+        +load(customer_id) Versioned~CustomerConsentLedger~
+    }
+
+    %% ActivationPermit alone does not solve race conditions.
+    %% UnitOfWork is responsible for consistency and optimistic locking.
+    %% Aggregate boundaries must not be violated.
+    class UnitOfWork {
+        <<ApplicationTransactionBoundary>>
+        +begin() Transaction
+        +assert_expected_version(aggregate_ref, expected) Result~void, ConsistencyError~
+        +save(entity, expected_version) Result~void, ConsistencyError~
+        +commit() Result~void, ConsistencyError~
+        +rollback()
+    }
+    class AggregateRef {
+        <<ValueObject>>
+        +AggregateType aggregate_type
+        +AggregateId aggregate_id
+    }
+    class VersionedEntity {
+        <<ApplicationAbstraction>>
+        +AggregateRef aggregate_ref
+        +AggregateVersion version
+    }
+    class OptimisticLock {
+        <<ConsistencyMechanism>>
+        compare_and_set_expected_version
+        serializable_version_predicate
+        hold_until_commit
+    }
+
+    class ActivationApplicationError {
+        <<ApplicationErrorEnum>>
+        Domain(CustomerActivationError)
+        Eligibility(EligibilityError)
+        StaleContactBookVersion
+        StaleConsentLedgerVersion
+        OptimisticLockFailed
+    }
+
+    class IdentityOutboxCommand {
+        <<Enum>>
+        ClaimReservedIdentity(reservation_id, customer_id)
+        ReleasePreviousIdentity(identity_key, customer_id)
+        CancelReservation(reservation_id, customer_id)
+    }
+    class IdentityOutbox {
+        <<TransactionalOutboxPort>>
+        +enqueue(command) Result~void, OutboxError~
+        +retry_until_success(command) Result~void, OutboxError~
+        +dead_letter_after_policy(command) Result~void, OutboxError~
+    }
+    class IdentityOutboxDispatcher {
+        <<ApplicationWorker>>
+        +dispatch_pending(now, limit) Result~DispatchSummary, OutboxError~
+    }
+    class OutboxInvariants {
+        <<ConsistencyInvariants>>
+        outbox_commands_created_only_after_successful_domain_change
+        release_previous_identity_is_eventually_consistent
+        claim_reserved_identity_must_be_idempotent
+        release_previous_identity_must_be_idempotent
+        duplicate_outbox_delivery_is_safe
+        commands_are_persisted_atomically_with_contact_book_commit
+    }
+    class ContactApplicationError {
+        <<ApplicationErrorEnum>>
+        IdentityRegistry(IdentityRegistryError)
+        ContactDomain(ContactError)
+        OptimisticLockFailed
+        ReservationProofInvalid
+        OutboxEnqueueFailed
+    }
+
+    CustomerActivationApplicationService --> CustomerRepository : load and save
+    CustomerActivationApplicationService --> CustomerContactBookRepository : load
+    CustomerActivationApplicationService --> CustomerConsentLedgerRepository : load
+    CustomerActivationApplicationService --> CustomerActivationPolicy : issue permit
+    CustomerActivationApplicationService --> AccessContext : authorize current action
+    CustomerActivationApplicationService --> ActionContextFactory : create command and audit context
+    CustomerActivationApplicationService --> Customer : invoke activate with prepared context
+    CustomerActivationApplicationService --> UnitOfWork : commit consistency boundary
+    CustomerActivationApplicationService ..> ActivationApplicationError : returns
+    CustomerActivationApplicationService ..> ActivationInvariants : orchestrates cross aggregate checks
+    UnitOfWork --> OptimisticLock : enforces
+    UnitOfWork --> EventEnvelopeFactory : creates envelopes at persistence boundary
+    UnitOfWork --> IdentityOutbox : persists identity commands atomically
+    UnitOfWork ..> AggregateRef : asserts version for
+    UnitOfWork ..> VersionedEntity : saves
+    UnitOfWork ..> ActivationInvariants : enforces source versions at commit
+
+    CustomerContactApplicationService --> CustomerRepository : loads lifecycle snapshot
+    CustomerContactApplicationService --> CustomerContactBookRepository : loads and saves contact book
+    CustomerContactApplicationService --> ContactLifecyclePolicy : checks Active customer rule
+    CustomerContactApplicationService --> UnitOfWork : commits contact replacement
+    CustomerContactApplicationService --> IdentityNormalizer : normalizes requested identity
+    CustomerContactApplicationService --> IdentityRegistry : reserves identity before mutation
+    CustomerContactApplicationService --> IdentityOutbox : atomically enqueues claim and release
+    CustomerContactApplicationService --> IdentityReservationProof : passes proof to contact book
+    CustomerContactApplicationService ..> ContactApplicationError : maps use case failures
+    ContactLifecyclePolicy ..> CustomerActivationSnapshot : reads lifecycle snapshot
+    ContactLifecyclePolicy ..> ContactEligibilitySnapshot : reads contact snapshot
+    ContactLifecyclePolicy ..> ContactBookInvariants : removing last contact when Active is cross aggregate
+
+    IdentityOutbox *-- IdentityOutboxCommand
+    IdentityOutbox ..> OutboxInvariants : durable delivery rules
+    IdentityOutboxDispatcher --> IdentityOutbox : polls and updates
+    IdentityOutboxDispatcher --> IdentityRegistry : executes idempotent commands
+    IdentityOutbox --> IdentityRegistry : eventually claims or releases

@@ -1,0 +1,47 @@
+%% Customer profile aggregate diagram.
+%% Source of truth: ../customer.md
+%% This file physically copies only the Profile slice.
+%% External entities are referenced by links only and remain defined in the
+%% source schema until their own detailed diagram files are populated.
+
+classDiagram
+    direction LR
+
+    %% Independent profile aggregate
+    class CustomerProfile {
+        <<AggregateRoot>>
+        -CustomerId customer_id
+        -Option~FullName~ full_name
+        -DisplayName display_name
+        -Option~AvatarAssetId~ avatar
+        -Option~CustomerLocation~ location
+        -AggregateVersion version
+        -Vec~PendingProfileEvent~ pending_events
+        +change_display_name(value, ctx) DomainResult
+        +change_full_name(value, ctx) DomainResult
+        +change_avatar(asset_id, ctx) DomainResult
+        +change_location(location, ctx) DomainResult
+    }
+    class CustomerLocation {
+        <<ValueObject>>
+        +CityName city
+        +Option~CountryCode~ country
+        +Option~RegionCode~ region
+        +Option~GeoId~ geo_id
+    }
+    CustomerProfile *-- CustomerLocation
+
+    class ProfileInvariants {
+        <<Invariants>>
+        display_name_is_required_and_valid
+        full_name_is_optional
+        avatar_contains_only_AvatarAssetId
+        location_is_optional
+        city_name_is_normalized_and_valid
+        geo_id_disambiguates_location
+        changes_emit_granular_profile_events
+        NoChange_emits_nothing_and_preserves_version
+    }
+
+    CustomerProfile ..> ProfileInvariants : change_display_name change_full_name change_avatar change_location
+    CustomerProfile ..> DomainResult : command result

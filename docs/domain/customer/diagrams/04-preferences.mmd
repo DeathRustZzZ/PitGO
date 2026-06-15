@@ -1,0 +1,136 @@
+%% Customer preferences aggregate diagram.
+%% Source of truth: ../customer.md
+%% This file physically copies only the Preferences slice.
+%% External entities are referenced by links only and remain defined in the
+%% source schema until their own detailed diagram files are populated.
+
+classDiagram
+    direction LR
+
+    %% Independent preferences aggregate
+    %% CommunicationPreferences stores user intent only.
+    %% Contact availability is checked by communication/application layer using ContactBook projection.
+    %% Preferences aggregate never reads CustomerContactBook.
+    class CustomerPreferences {
+        <<AggregateRoot>>
+        -CustomerId customer_id
+        -LanguageCode language
+        -IanaTimezone timezone
+        -NotificationPreferences notifications
+        -CommunicationPreferences communication
+        -AggregateVersion version
+        -Vec~PendingPreferencesEvent~ pending_events
+        +change_language(language, ctx) Result~ChangeOutcome_PreferencesError~
+        +change_timezone(timezone, ctx) Result~ChangeOutcome_PreferencesError~
+        +update_notification_preferences(preferences, ctx) Result~ChangeOutcome_PreferencesError~
+        +update_communication_preferences(preferences, ctx) Result~ChangeOutcome_PreferencesError~
+        +set_quiet_hours(quiet_hours, ctx) Result~ChangeOutcome_PreferencesError~
+        +clear_quiet_hours(ctx) Result~ChangeOutcome_PreferencesError~
+        +change_preferred_channel(channel, ctx) Result~ChangeOutcome_PreferencesError~
+        +change_allowed_channels(channels, ctx) Result~ChangeOutcome_PreferencesError~
+    }
+    class NotificationPreferences {
+        <<ValueObject>>
+        +bool booking_reminders
+        +bool repair_status_updates
+        +bool marketing_messages
+        +bool chat_messages
+        +bool garage_offers
+        +bool vehicle_service_reminders
+    }
+    class CommunicationPreferences {
+        <<ValueObject>>
+        +Set~ContactMethod~ allowed_channels
+        +Option~ContactMethod~ preferred_channel
+        +Option~QuietHours~ quiet_hours
+        +MessagePriorityPolicy priority_policy
+    }
+    class ContactMethod {
+        <<Enum>>
+        communication_channel_not_login_identity
+        Phone
+        Email
+        Telegram
+        InApp
+    }
+    class QuietHours {
+        <<ValidatedValueObject>>
+        +LocalTime start
+        +LocalTime end
+        +DstResolutionPolicy dst_policy
+    }
+    class DstResolutionPolicy {
+        <<Enum>>
+        SkipAmbiguousLocalTime
+        PreferEarlierOffset
+        PreferLaterOffset
+        UseUtcFallback
+    }
+    class MessagePriorityPolicy {
+        <<Enum>>
+        TransactionalCanBypassQuietHours
+        CriticalCanBypassQuietHours
+        NothingBypassesQuietHours
+    }
+    class PreferencesError {
+        <<DomainErrorEnum>>
+        InvalidLanguageCode
+        InvalidTimezone
+        InvalidQuietHours
+        PreferredChannelNotAllowed
+        EmptyAllowedChannels
+        CommunicationChannelUnavailable
+        MarketingConsentRequiredAtDispatchTime
+        NoChange
+    }
+    class PreferencesEvent {
+        <<TypedDomainEvent>>
+        LanguageChangedV1
+        TimezoneChangedV1
+        NotificationPreferencesChangedV1
+        CommunicationPreferencesChangedV1
+        QuietHoursSetV1
+        QuietHoursClearedV1
+        PreferredChannelChangedV1
+        AllowedChannelsChangedV1
+    }
+    class PendingPreferencesEvent {
+        <<ImmutableDomainEventRecord>>
+        +PreferencesEvent payload
+        +DateTime~Utc~ occurred_at
+        +ActorRef actor
+        +Vec~PrincipalRoleSnapshot~ role_snapshots
+        +CorrelationId correlation_id
+        +Option~EventId~ causation_id
+    }
+    CustomerPreferences *-- NotificationPreferences
+    CustomerPreferences *-- CommunicationPreferences
+    CommunicationPreferences *-- QuietHours
+    CommunicationPreferences *-- ContactMethod
+    CommunicationPreferences *-- MessagePriorityPolicy
+    QuietHours *-- DstResolutionPolicy
+    CustomerPreferences *-- "0..*" PendingPreferencesEvent : raises
+    PendingPreferencesEvent *-- PreferencesEvent
+    PendingPreferencesEvent ..> ActionContext : copies audit fields at creation
+    CustomerPreferences ..> PreferencesError : returns
+
+    class PreferencesInvariants {
+        <<Invariants>>
+        language_code_is_valid
+        iana_timezone_is_valid
+        allowed_channels_is_non_empty
+        preferred_channel_is_allowed
+        quiet_hours_has_valid_local_time_range
+        quiet_hours_defines_DST_resolution_policy
+        notifications_express_intent_not_legal_permission
+        communication_expresses_intent_not_contact_verification
+        preferences_never_read_contact_book
+        preferences_never_read_or_mutate_consent_ledger
+        marketing_permission_is_checked_at_dispatch_time
+        NoChange_emits_nothing_and_preserves_version
+    }
+
+    CustomerPreferences ..> PreferencesInvariants : language timezone notification communication quiet_hours channel methods
+    CustomerPreferences ..> DomainResult : command result
+    EventEnvelopeFactory --> PendingPreferencesEvent : wraps
+    CustomerCommunicationEligibilityProjection ..> CustomerPreferences : projects preferences events
