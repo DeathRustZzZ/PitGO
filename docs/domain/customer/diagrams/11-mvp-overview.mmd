@@ -1,0 +1,56 @@
+%% Customer Domain MVP overview.
+%% Source of Truth: ../customer.md
+%% This is a derived simplified view for MVP discussion only.
+%% It does not rename, remove, or redefine the source model.
+
+flowchart LR
+    Customer["Customer - lifecycle aggregate"]
+    CustomerStatus["CustomerStatus - Draft / Active / Suspended / Blocked / Deleted"]
+    CustomerContactBook["CustomerContactBook - phone / email / telegram / primary"]
+    IdentityRegistry["IdentityRegistry - global contact identity uniqueness"]
+    IdentityReservationProof["IdentityReservationProof - proof for contact mutation"]
+    CustomerConsentLedger["CustomerConsentLedger - required legal consents"]
+    CustomerActivationPolicy["CustomerActivationPolicy - activation eligibility"]
+    ActivationPermit["ActivationPermit - short-lived activation contract"]
+    CustomerActivationApplicationService["CustomerActivationApplicationService - orchestrates activation"]
+    CustomerContactApplicationService["CustomerContactApplicationService - orchestrates contact changes"]
+    UnitOfWork["UnitOfWork - transaction boundary and version checks"]
+    EventEnvelopeFactory["EventEnvelopeFactory - wraps pending events"]
+    EventStore["EventEnvelope - persisted audit event"]
+    AccessContext["AccessContext - authorization before command"]
+    ActionContext["ActionContext - immutable command audit context"]
+
+    Customer --> CustomerStatus
+    CustomerContactBook --> IdentityReservationProof
+    IdentityRegistry --> IdentityReservationProof
+    CustomerContactApplicationService --> IdentityRegistry
+    CustomerContactApplicationService --> CustomerContactBook
+    CustomerContactApplicationService --> UnitOfWork
+
+    CustomerActivationApplicationService --> AccessContext
+    AccessContext --> ActionContext
+    CustomerActivationApplicationService --> Customer
+    CustomerActivationApplicationService --> CustomerContactBook
+    CustomerActivationApplicationService --> CustomerConsentLedger
+    CustomerActivationApplicationService --> CustomerActivationPolicy
+    CustomerActivationPolicy --> ActivationPermit
+    Customer --> ActivationPermit
+    CustomerActivationApplicationService --> UnitOfWork
+
+    Customer --> EventEnvelopeFactory
+    CustomerContactBook --> EventEnvelopeFactory
+    CustomerConsentLedger --> EventEnvelopeFactory
+    UnitOfWork --> EventEnvelopeFactory
+    EventEnvelopeFactory --> EventStore
+
+    classDef aggregate fill:#EFF6FF,stroke:#2563EB,color:#0F172A
+    classDef policy fill:#F5F3FF,stroke:#7C3AED,color:#0F172A
+    classDef app fill:#ECFDF5,stroke:#059669,color:#0F172A
+    classDef infra fill:#F8FAFC,stroke:#475569,color:#0F172A
+    classDef audit fill:#FFF7ED,stroke:#D97706,color:#0F172A
+
+    class Customer,CustomerContactBook,CustomerConsentLedger,IdentityRegistry aggregate
+    class CustomerActivationPolicy,ActivationPermit,IdentityReservationProof policy
+    class CustomerActivationApplicationService,CustomerContactApplicationService,UnitOfWork app
+    class AccessContext,ActionContext audit
+    class EventEnvelopeFactory,EventStore,CustomerStatus infra
