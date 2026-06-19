@@ -85,6 +85,7 @@ version = "0.1.0"
 dependencies = [
  "chrono",
  "serde",
+ "shared",
  "thiserror",
  "uuid",
 ]
@@ -365,6 +366,11 @@ dependencies = [
 [[package]]
 name = "shared"
 version = "0.1.0"
+dependencies = [
+ "chrono",
+ "serde",
+ "uuid",
+]
 
 [[package]]
 name = "shlex"

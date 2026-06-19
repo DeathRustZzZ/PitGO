@@ -1,3 +1,8 @@
+> **DESIGN SPECIFICATION — NOT IMPLEMENTED**
+>
+> This document describes the intended domain architecture.
+> Most aggregates, policies, repositories, events, and application services described here are not implemented in Rust yet.
+
 # Customer domain architecture review
 
 Текущая модель улучшает типобезопасность по сравнению с CRUD, но остается

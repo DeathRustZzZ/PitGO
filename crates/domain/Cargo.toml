@@ -7,5 +7,6 @@ license.workspace = true
 [dependencies]
 chrono.workspace = true
 serde.workspace = true
+shared.workspace = true
 thiserror.workspace = true
 uuid.workspace = true
