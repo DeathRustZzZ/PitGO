@@ -1,0 +1,126 @@
+%%{init: {"flowchart": {"curve": "linear", "nodeSpacing": 50, "rankSpacing": 70}}}%%
+%% Vehicle Domain — bounded context overview.
+%% Source of truth: ARCHITECTURE.md § Vehicle Domain
+%% Mirrors: docs/domain/customer/diagrams/11-mvp-domain-map.mmd
+
+flowchart LR
+
+    subgraph AuthLane["Authorization / Audit"]
+        direction TB
+        AccessContext["AccessContext"]
+        ActionContextFactory["ActionContextFactory"]
+        ActionCtx["ActionContext\nactor · roles · correlation"]
+    end
+
+    subgraph AppLane["Application Layer"]
+        direction TB
+        VehicleAppSvc["VehicleApplicationService"]
+        OwnershipAppSvc["VehicleOwnershipApplicationService"]
+        UnitOfWork["UnitOfWork\ntransaction + optimistic lock"]
+        Repos["VehicleRepository\nVehicleOwnershipRepository"]
+        OutboxVehicle["VehicleOutbox\nreliable event delivery"]
+        EvtEnvFactory["EventEnvelopeFactory\npersistence boundary"]
+    end
+
+    subgraph PolicyLane["Policies / Capabilities"]
+        direction TB
+        ActPolicy["VehicleActivationPolicy"]
+        ActPermit["VehicleActivationPermit\nrequired by Vehicle.activate()"]
+        LifecyclePolicy["VehicleLifecyclePolicy\nblocks archive/delete with active ownership"]
+        ConsistPolicy["OwnershipConsistencyPolicy\ncheck non-terminal ownerships"]
+        EligSnap["OwnershipEligibilitySnapshot\nrequired by VehicleOwnership.start()"]
+        ResvProof["VehicleIdentityReservationProof\nrequired by assign_vin / correct_vin"]
+    end
+
+    subgraph DomainLane["Aggregate Roots"]
+        direction TB
+        Vehicle["Vehicle\nidentity · specs · lifecycle"]
+        VehicleOwnership["VehicleOwnership\noperational ownership"]
+    end
+
+    subgraph RegistryLane["Vehicle Identity Registry"]
+        direction TB
+        IdRegistry["VehicleIdentityRegistry\nreserve · claim · release VIN"]
+        VinNorm["VinNormalizer"]
+        IdKey["VehicleIdentityKey\nVIN / trusted external ref"]
+    end
+
+    subgraph EventLane["Eventing / Audit"]
+        direction TB
+        PendingVehEvt["PendingVehicleEvent\nraised inside Vehicle"]
+        PendingOwnEvt["PendingOwnershipEvent\nraised inside VehicleOwnership"]
+        VehEvents["VehicleEvent\n11 typed variants"]
+        OwnEvents["VehicleOwnershipEvent\n6 typed variants"]
+        EvtEnvelope["EventEnvelope\npersisted audit record"]
+    end
+
+    subgraph ExternalLane["External / ACL"]
+        direction TB
+        ExtAdapter["ExternalVehicleRegistryAdapter\nGIBDD · VIN API"]
+    end
+
+    AccessContext --> ActionContextFactory
+    ActionContextFactory --> ActionCtx
+
+    AuthLane --> AppLane
+
+    VehicleAppSvc --> ActPolicy
+    VehicleAppSvc --> LifecyclePolicy
+    VehicleAppSvc --> IdRegistry
+    VehicleAppSvc --> Repos
+    VehicleAppSvc --> UnitOfWork
+    ActPolicy --> ActPermit
+    ActPermit --> Vehicle
+
+    OwnershipAppSvc --> ConsistPolicy
+    OwnershipAppSvc --> LifecyclePolicy
+    OwnershipAppSvc --> Repos
+    OwnershipAppSvc --> UnitOfWork
+    ConsistPolicy --> EligSnap
+    EligSnap --> VehicleOwnership
+
+    IdRegistry --> ResvProof
+    ResvProof --> Vehicle
+
+    UnitOfWork --> EvtEnvFactory
+    UnitOfWork --> OutboxVehicle
+    EvtEnvFactory --> EvtEnvelope
+
+    Vehicle --> PendingVehEvt
+    VehicleOwnership --> PendingOwnEvt
+    PendingVehEvt --> VehEvents
+    PendingOwnEvt --> OwnEvents
+    VehEvents --> EvtEnvelope
+    OwnEvents --> EvtEnvelope
+
+    VinNorm --> IdKey
+    IdRegistry --> IdKey
+
+    ExtAdapter -.-> VehicleAppSvc
+
+    style Vehicle fill:#1D4ED8,stroke:#1E3A8A,stroke-width:3px,color:#FFFFFF
+    style VehicleOwnership fill:#1D4ED8,stroke:#1E3A8A,stroke-width:3px,color:#FFFFFF
+    style ActPermit fill:#DCFCE7,stroke:#16A34A,stroke-dasharray:5 5,color:#0F172A
+    style EligSnap fill:#DCFCE7,stroke:#16A34A,stroke-dasharray:5 5,color:#0F172A
+    style ResvProof fill:#DCFCE7,stroke:#16A34A,stroke-dasharray:5 5,color:#0F172A
+    style IdKey fill:#DCFCE7,stroke:#16A34A,stroke-dasharray:5 5,color:#0F172A
+    style ActPolicy fill:#FFEDD5,stroke:#EA580C,color:#0F172A
+    style LifecyclePolicy fill:#FFEDD5,stroke:#EA580C,color:#0F172A
+    style ConsistPolicy fill:#FFEDD5,stroke:#EA580C,color:#0F172A
+    style PendingVehEvt fill:#FEF9C3,stroke:#CA8A04,color:#0F172A
+    style PendingOwnEvt fill:#FEF9C3,stroke:#CA8A04,color:#0F172A
+    style VehEvents fill:#FEF9C3,stroke:#CA8A04,color:#0F172A
+    style OwnEvents fill:#FEF9C3,stroke:#CA8A04,color:#0F172A
+    style EvtEnvelope fill:#FEF9C3,stroke:#CA8A04,color:#0F172A
+    style AccessContext fill:#F1F5F9,stroke:#64748B,stroke-dasharray:5 5,color:#0F172A
+    style ActionContextFactory fill:#F1F5F9,stroke:#64748B,stroke-dasharray:5 5,color:#0F172A
+    style ActionCtx fill:#F1F5F9,stroke:#64748B,stroke-dasharray:5 5,color:#0F172A
+    style VehicleAppSvc fill:#F1F5F9,stroke:#64748B,stroke-dasharray:5 5,color:#0F172A
+    style OwnershipAppSvc fill:#F1F5F9,stroke:#64748B,stroke-dasharray:5 5,color:#0F172A
+    style UnitOfWork fill:#F1F5F9,stroke:#64748B,stroke-dasharray:5 5,color:#0F172A
+    style Repos fill:#F1F5F9,stroke:#64748B,stroke-dasharray:5 5,color:#0F172A
+    style OutboxVehicle fill:#F1F5F9,stroke:#64748B,stroke-dasharray:5 5,color:#0F172A
+    style EvtEnvFactory fill:#F1F5F9,stroke:#64748B,stroke-dasharray:5 5,color:#0F172A
+    style IdRegistry fill:#F1F5F9,stroke:#64748B,stroke-dasharray:5 5,color:#0F172A
+    style VinNorm fill:#F1F5F9,stroke:#64748B,stroke-dasharray:5 5,color:#0F172A
+    style ExtAdapter fill:#F1F5F9,stroke:#64748B,stroke-dasharray:5 5,color:#0F172A

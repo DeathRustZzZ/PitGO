@@ -1,0 +1,154 @@
+%% VehicleOwnership Aggregate Root — operational ownership within PitGO.
+%% Source of truth: ARCHITECTURE.md § Vehicle Domain › VehicleOwnership Aggregate
+%% NOT legal/registry ownership. Models access eligibility inside the platform.
+%% Mirrors: docs/domain/customer/diagrams/02-contact-book.mmd (separate AR pattern)
+
+classDiagram
+    direction LR
+
+    class VehicleOwnership {
+        <<AggregateRoot>>
+        -VehicleOwnershipId id
+        -VehicleId vehicle_id
+        -CustomerId owner_customer_id
+        -OwnershipType ownership_type
+        -OwnershipStatus status
+        -OwnershipPeriod period
+        -AggregateVersion version
+        -DateTime~Utc~ created_at
+        -Option~DateTime~Utc~~ updated_at
+        -Vec~PendingOwnershipEvent~ pending_events
+        +start(id, vehicle_id, owner_id, type, snapshot, ctx, now) Result~VehicleOwnership, OwnershipError~
+        +verify(ctx, now) Result~ChangeOutcome, OwnershipError~
+        +reject(reason, ctx, now) Result~ChangeOutcome, OwnershipError~
+        +mark_disputed(reason, ctx, now) Result~ChangeOutcome, OwnershipError~
+        +resolve_dispute(resolution, ctx, now) Result~ChangeOutcome, OwnershipError~
+        +end(reason, ctx, now) Result~ChangeOutcome, OwnershipError~
+        +pull_pending_events() Vec~PendingOwnershipEvent~
+    }
+
+    class VehicleOwnershipId {
+        <<ValueObject>>
+        <<TypeSafeNewtype>>
+        -Uuid value
+        +new() VehicleOwnershipId
+        +as_uuid() Uuid
+    }
+
+    class OwnershipStatus {
+        <<StateMachine>>
+        PendingVerification
+        Active
+        Ended
+        Disputed
+        Rejected
+    }
+
+    class OwnershipType {
+        <<Enum>>
+        Private
+        Company
+        Leasing
+        Fleet
+        Unknown
+    }
+
+    class OwnershipPeriod {
+        <<ValueObject>>
+        -DateTime~Utc~ started_at
+        -Option~DateTime~Utc~~ ended_at
+        +is_active() bool
+        +close(now: DateTime~Utc~) OwnershipPeriod
+    }
+
+    class AggregateVersion {
+        <<ValueObject>>
+        -u64 value
+        +initial() AggregateVersion
+        +next() AggregateVersion
+    }
+
+    class PendingOwnershipEvent {
+        <<ValueObject>>
+        -VehicleOwnershipEvent payload
+        -DateTime~Utc~ occurred_at
+    }
+
+    class VehicleOwnershipEvent {
+        <<DomainEventEnum>>
+        VehicleOwnershipStartedV1
+        VehicleOwnershipVerifiedV1
+        VehicleOwnershipRejectedV1
+        VehicleOwnershipDisputedV1
+        VehicleOwnershipResolvedV1
+        VehicleOwnershipEndedV1
+    }
+
+    class OwnershipError {
+        <<DomainError>>
+        AlreadyEnded
+        AlreadyActive
+        AlreadyRejected
+        PeriodEndBeforeStart
+        ActiveOwnershipAlreadyExists
+        CannotReactivateEndedOwnership
+        InvariantViolation
+    }
+
+    class OwnershipInvariants {
+        <<BusinessRules>>
+        ended_and_rejected_are_terminal
+        active_ownership_has_verification
+        period_end_not_before_start
+        non_terminal_rule_enforced_externally
+        ownership_history_not_stored_in_vehicle
+        customer_referenced_by_id_only
+    }
+
+    class OwnershipEligibilitySnapshot {
+        <<Capability>>
+        -VehicleId vehicle_id
+        -bool has_active_ownership
+        -Option~VehicleOwnershipId~ active_id
+        -DateTime~Utc~ captured_at
+        +no_active_ownership_exists() bool
+    }
+
+    class VehicleId {
+        <<ExternalRef>>
+        -Uuid value
+    }
+
+    class CustomerId {
+        <<ExternalRef>>
+        -Uuid value
+    }
+
+    VehicleOwnership *-- "1" VehicleOwnershipId : id
+    VehicleOwnership *-- "1" OwnershipStatus : status
+    VehicleOwnership *-- "1" OwnershipType : type
+    VehicleOwnership *-- "1" OwnershipPeriod : period
+    VehicleOwnership *-- "1" AggregateVersion : version
+    VehicleOwnership *-- "0..*" PendingOwnershipEvent : pending_events
+    VehicleOwnership ..> VehicleId : references by ID
+    VehicleOwnership ..> CustomerId : references by ID
+
+    PendingOwnershipEvent *-- "1" VehicleOwnershipEvent : payload
+
+    VehicleOwnership ..> OwnershipError : raises
+    VehicleOwnership ..> OwnershipInvariants : enforces
+    VehicleOwnership ..> OwnershipEligibilitySnapshot : requires for start
+
+    style VehicleOwnership fill:#1D4ED8,stroke:#1E3A8A,stroke-width:3px,color:#FFFFFF
+    style VehicleOwnershipId fill:#DCFCE7,stroke:#16A34A,stroke-dasharray:5 5,color:#0F172A
+    style OwnershipPeriod fill:#DCFCE7,stroke:#16A34A,stroke-dasharray:5 5,color:#0F172A
+    style AggregateVersion fill:#DCFCE7,stroke:#16A34A,stroke-dasharray:5 5,color:#0F172A
+    style PendingOwnershipEvent fill:#FEF9C3,stroke:#CA8A04,color:#0F172A
+    style VehicleOwnershipEvent fill:#FEF9C3,stroke:#CA8A04,color:#0F172A
+    style OwnershipStatus fill:#F3E8FF,stroke:#7E22CE,color:#0F172A
+    style OwnershipType fill:#F3E8FF,stroke:#7E22CE,color:#0F172A
+    style OwnershipError fill:#FEE2E2,stroke:#DC2626,color:#0F172A
+    style OwnershipInvariants fill:#FCE7F3,stroke:#DB2777,color:#0F172A
+    style OwnershipEligibilitySnapshot fill:#FFEDD5,stroke:#EA580C,color:#0F172A
+    style VehicleId fill:#F1F5F9,stroke:#64748B,stroke-dasharray:5 5,color:#0F172A
+    style CustomerId fill:#F1F5F9,stroke:#64748B,stroke-dasharray:5 5,color:#0F172A

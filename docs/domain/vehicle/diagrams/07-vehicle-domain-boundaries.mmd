@@ -1,0 +1,93 @@
+%%{init: {"flowchart": {"curve": "linear", "nodeSpacing": 45, "rankSpacing": 65}}}%%
+%% Vehicle Domain — cross-BC boundaries and integration points.
+%% Source of truth: ARCHITECTURE.md § Bounded Contexts, § Cross-aggregate Consistency
+%% Rule: no object crosses BC boundary — only typed ID references.
+%% Mirrors: docs/domain/customer/diagrams/09-application-consistency.mmd (integration layer)
+
+flowchart TB
+
+    subgraph AuthBC["Authorization BC"]
+        direction LR
+        AccessContext["AccessContext\ncurrent user + permissions"]
+        ActionContext["ActionContext\naudit trail carrier"]
+    end
+
+    subgraph VehicleBC["Vehicle BC"]
+        direction TB
+        VehicleAR["Vehicle (AR)\nidentity · specs · lifecycle"]
+        VehicleIdReg["VehicleIdentityRegistry\nVIN uniqueness (global)"]
+        VehicleActPolicy["VehicleActivationPolicy\nVehicleLifecyclePolicy"]
+        VehicleEvt["VehicleEvent\n11 typed variants"]
+    end
+
+    subgraph OwnershipBC["VehicleOwnership BC"]
+        direction TB
+        VehicleOwnershipAR["VehicleOwnership (AR)\noperational access within PitGO"]
+        ConsistPolicy["OwnershipConsistencyPolicy\nnon-terminal rule check"]
+        OwnEvt["VehicleOwnershipEvent\n6 typed variants"]
+    end
+
+    subgraph CustomerBC["Customer BC"]
+        direction TB
+        CustomerAR["Customer (AR)\nidentity · lifecycle"]
+        CustomerIdReg["IdentityRegistry\ncontact uniqueness"]
+    end
+
+    subgraph AuditInfra["Audit / Outbox (Infrastructure)"]
+        direction LR
+        VehicleOutbox["VehicleOutbox\nreliable delivery"]
+        EventEnvelope["EventEnvelope\npersisted audit record"]
+    end
+
+    subgraph AppOrchestration["Application Layer (Orchestration)"]
+        direction LR
+        TransferSaga["OwnershipTransfer\n(VehicleOwnershipApplicationService)\nends current + starts new in one tx"]
+        LifecycleCoord["LifecycleCoordination\n(VehicleApplicationService)\narchive/delete requires ownership.end() first"]
+    end
+
+    subgraph ExternalSystems["External Systems (ACL)"]
+        direction LR
+        VinApi["VIN API\nGIBDD · NHTSA"]
+        RegDoc["Registration Authority"]
+    end
+
+    %% Auth flows into all domain operations
+    AccessContext --> ActionContext
+    AuthBC --> AppOrchestration
+
+    %% Cross-BC ID references (objects never cross boundary)
+    VehicleOwnershipAR -- "VehicleId (ID ref only)" --> VehicleAR
+    VehicleOwnershipAR -- "CustomerId (ID ref only)" --> CustomerAR
+
+    %% Application layer coordinates both BCs
+    TransferSaga --> VehicleBC
+    TransferSaga --> OwnershipBC
+    LifecycleCoord --> VehicleBC
+    LifecycleCoord --> OwnershipBC
+
+    %% Events flow to outbox
+    VehicleEvt --> VehicleOutbox
+    OwnEvt --> VehicleOutbox
+    VehicleOutbox --> EventEnvelope
+
+    %% External via ACL adapter
+    VinApi -.->|"ACL: ExternalVehicleRegistryAdapter"| VehicleBC
+    RegDoc -.->|"ACL: ExternalVehicleRegistryAdapter"| VehicleBC
+
+    style VehicleAR fill:#1D4ED8,stroke:#1E3A8A,stroke-width:3px,color:#FFFFFF
+    style VehicleOwnershipAR fill:#1D4ED8,stroke:#1E3A8A,stroke-width:3px,color:#FFFFFF
+    style CustomerAR fill:#1D4ED8,stroke:#1E3A8A,stroke-width:3px,color:#FFFFFF
+    style VehicleEvt fill:#FEF9C3,stroke:#CA8A04,color:#0F172A
+    style OwnEvt fill:#FEF9C3,stroke:#CA8A04,color:#0F172A
+    style EventEnvelope fill:#FEF9C3,stroke:#CA8A04,color:#0F172A
+    style VehicleIdReg fill:#FFEDD5,stroke:#EA580C,color:#0F172A
+    style VehicleActPolicy fill:#FFEDD5,stroke:#EA580C,color:#0F172A
+    style ConsistPolicy fill:#FFEDD5,stroke:#EA580C,color:#0F172A
+    style CustomerIdReg fill:#FFEDD5,stroke:#EA580C,color:#0F172A
+    style TransferSaga fill:#FFEDD5,stroke:#EA580C,color:#0F172A
+    style LifecycleCoord fill:#FFEDD5,stroke:#EA580C,color:#0F172A
+    style AccessContext fill:#F1F5F9,stroke:#64748B,stroke-dasharray:5 5,color:#0F172A
+    style ActionContext fill:#F1F5F9,stroke:#64748B,stroke-dasharray:5 5,color:#0F172A
+    style VehicleOutbox fill:#F1F5F9,stroke:#64748B,stroke-dasharray:5 5,color:#0F172A
+    style VinApi fill:#F1F5F9,stroke:#64748B,stroke-dasharray:5 5,color:#0F172A
+    style RegDoc fill:#F1F5F9,stroke:#64748B,stroke-dasharray:5 5,color:#0F172A
