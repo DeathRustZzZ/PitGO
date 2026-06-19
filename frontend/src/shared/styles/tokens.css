@@ -1,0 +1,119 @@
+/*
+ * Дизайн-токены PitGO.
+ *
+ * Стратегия: семантические токены (--color-*, --space-* и т.д.) — единственное,
+ * чем пользуются компоненты. Они ссылаются на переменные темы Telegram
+ * (--tg-theme-*) с фолбэком на нашу брендовую палитру (--pit-*).
+ *
+ * - Внутри Telegram Mini App клиент сам выставляет --tg-theme-* на :root,
+ *   поэтому приложение автоматически берёт цвета темы пользователя.
+ * - В обычном вебе --tg-theme-* отсутствуют, поэтому работают фолбэки --pit-*.
+ *   Тёмная тема для веба переключается через prefers-color-scheme ниже.
+ *
+ * Менять цвета компонентов нужно ТОЛЬКО здесь.
+ */
+
+:root {
+  /* --- Брендовая палитра (light) — фолбэк для веба --- */
+  --pit-bg: #f7f8fa;
+  --pit-bg-subtle: #eef1f6;
+  --pit-surface: #ffffff;
+  --pit-surface-muted: #f3f4f6;
+  --pit-text: #0c1320;
+  --pit-hint: #5b6472;
+  --pit-border: #e6e9ef;
+  --pit-primary: #2563eb;
+  --pit-primary-hover: #1d4ed8;
+  --pit-on-primary: #ffffff;
+  --pit-danger: #dc2626;
+  --pit-success: #16a34a;
+
+  /* --- Семантические цвета (Telegram-aware) --- */
+  --color-bg: var(--tg-theme-bg-color, var(--pit-bg));
+  --color-bg-subtle: var(--tg-theme-secondary-bg-color, var(--pit-bg-subtle));
+  --color-surface: var(--tg-theme-secondary-bg-color, var(--pit-surface));
+  --color-surface-muted: var(--pit-surface-muted);
+  --color-text: var(--tg-theme-text-color, var(--pit-text));
+  --color-hint: var(--tg-theme-hint-color, var(--pit-hint));
+  --color-link: var(--tg-theme-link-color, var(--pit-primary));
+  --color-border: var(--pit-border);
+  --color-primary: var(--tg-theme-button-color, var(--pit-primary));
+  --color-primary-hover: var(--pit-primary-hover);
+  --color-on-primary: var(--tg-theme-button-text-color, var(--pit-on-primary));
+  --color-danger: var(--tg-theme-destructive-text-color, var(--pit-danger));
+  --color-success: var(--pit-success);
+
+  /* Мягкий тинт акцента (для иконок, подложек). Считается от текущего primary,
+     поэтому подстраивается и под тему Telegram. */
+  --color-primary-soft: color-mix(
+    in srgb,
+    var(--color-primary) 12%,
+    transparent
+  );
+
+  /* --- Типографика --- */
+  --font-sans:
+    "Inter", system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial,
+    sans-serif;
+  --font-size-xs: 0.75rem; /* 12 */
+  --font-size-sm: 0.875rem; /* 14 */
+  --font-size-md: 1rem; /* 16 */
+  --font-size-lg: 1.25rem; /* 20 */
+  --font-size-xl: 1.75rem; /* 28 */
+  --font-size-2xl: 2.5rem; /* 40 */
+  --font-size-3xl: 3.25rem; /* 52 — крупный заголовок hero на десктопе */
+  --line-tight: 1.1;
+  --line-snug: 1.3;
+  --line-normal: 1.6;
+  --tracking-tight: -0.02em;
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+
+  /* --- Spacing scale (шаг 4px) --- */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-8: 3rem;
+  --space-10: 4rem;
+  --space-12: 6rem;
+
+  /* --- Радиусы --- */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-full: 9999px;
+
+  /* --- Тени --- */
+  --shadow-sm: 0 1px 2px rgba(13, 19, 32, 0.06);
+  --shadow-md: 0 8px 24px rgba(13, 19, 32, 0.08);
+  --shadow-lg: 0 24px 60px rgba(13, 19, 32, 0.12);
+
+  /* --- Прочее --- */
+  --container-width: 1120px;
+  --focus-ring: 0 0 0 3px
+    color-mix(in srgb, var(--color-primary) 35%, transparent);
+}
+
+/* Тёмная тема для обычного веба.
+   В Telegram color-scheme выставляет сам клиент, и переменные --tg-theme-*
+   уже содержат тёмные цвета, поэтому этот блок на Telegram не влияет. */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --pit-bg: #0c0f14;
+    --pit-bg-subtle: #12161d;
+    --pit-surface: #161b22;
+    --pit-surface-muted: #20242b;
+    --pit-text: #eef1f6;
+    --pit-hint: #9aa3af;
+    --pit-border: #262c35;
+    --pit-primary: #4b8bf5;
+    --pit-primary-hover: #6fa3f7;
+    --pit-on-primary: #0c0f14;
+  }
+}
