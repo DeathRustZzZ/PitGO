@@ -1,0 +1,179 @@
+%%{init: {"flowchart": {"curve": "linear", "nodeSpacing": 45, "rankSpacing": 75}}}%%
+%% Customer Domain MVP map.
+%% Source of Truth: Full.mmd and ../customer.md
+%% Excalidraw-friendly version: fewer arrows, clear left-to-right lanes.
+
+flowchart LR
+    subgraph AccessLane["Access / Auth Read-side"]
+        direction TB
+        AccessContext["AccessContext\nauthorize current action"]
+        AuthorizationDecision["AuthorizationDecision"]
+        ActionContextFactory["ActionContextFactory"]
+        ActionContext["ActionContext\naudit actor, roles, correlation"]
+        AuthContext["AuthContext\nreferences CustomerId only"]
+    end
+
+    subgraph AppLane["Application Consistency"]
+        direction TB
+        ActivationService["CustomerActivationApplicationService"]
+        ContactService["CustomerContactApplicationService"]
+        UnitOfWork["UnitOfWork\ntransaction + version checks"]
+        Repositories["Repositories\nCustomer / ContactBook / ConsentLedger"]
+        IdentityOutbox["IdentityOutbox\nclaim / release commands"]
+        EventEnvelopeFactory["EventEnvelopeFactory\npersistence boundary"]
+    end
+
+    subgraph PolicyLane["Policies / Capabilities"]
+        direction TB
+        ActivationPolicy["CustomerActivationPolicy\nchecks snapshots"]
+        ActivationPermit["ActivationPermit\nrequired by Customer.activate"]
+        ContactLifecyclePolicy["ContactLifecyclePolicy\nactive customer contact rule"]
+        ReservationProof["IdentityReservationProof\nrequired by ContactBook mutation"]
+        CoreInvariants["Core invariants\nlocal rules stay inside aggregates"]
+        OutboxPolicy["Outbox invariants\natomic enqueue, idempotent dispatch"]
+    end
+
+    subgraph AggregateLane["Aggregate Roots"]
+        direction TB
+        Customer["Customer\nLifecycle"]
+        ContactBook["CustomerContactBook"]
+        Profile["CustomerProfile"]
+        Preferences["CustomerPreferences"]
+        ConsentLedger["CustomerConsentLedger"]
+        IdentityEntry["IdentityRegistryEntry\nper IdentityKey"]
+    end
+
+    subgraph IdentityLane["Identity Registry"]
+        direction TB
+        IdentityRegistry["IdentityRegistry\nreserve / claim / release"]
+        IdentityNormalizer["IdentityNormalizer"]
+        IdentityKey["IdentityKey\nnormalized phone / email / telegram"]
+        IdentityRepository["IdentityRegistryEntryRepository"]
+        IdentityEvent["IdentityRegistryEvent"]
+        IdentityError["IdentityRegistryError"]
+    end
+
+    subgraph EventLane["Eventing / Audit"]
+        direction TB
+        PendingEvents["PendingEvents\nraised inside aggregates"]
+        DomainEvents["Domain Events\ncustomer / contact / profile / preferences / consent"]
+        EventEnvelope["EventEnvelope\nstored audit event"]
+        PrincipalRoleSnapshot["PrincipalRoleSnapshot\nhistorical evidence"]
+    end
+
+    subgraph ReadLane["Read-side Projections"]
+        direction TB
+        CommunicationProjection["CustomerCommunicationEligibilityProjection"]
+        ContactAvailabilityProjection["CustomerContactAvailabilityProjection"]
+        NotificationDispatchPolicy["NotificationDispatchPolicy"]
+        IdentityAuditProjection["IdentityAuditProjection"]
+        RegistryAuditProjection["IdentityRegistryAuditProjection"]
+    end
+
+    AccessContext --> AuthorizationDecision
+    AuthorizationDecision --> ActionContextFactory
+    ActionContextFactory --> ActionContext
+    AuthContext -.-> AccessContext
+
+    AccessLane --> AppLane
+    AppLane --> PolicyLane
+    PolicyLane --> AggregateLane
+    AggregateLane --> EventLane
+    EventLane --> ReadLane
+
+    ActivationService --> ActivationPolicy
+    ActivationService --> Repositories
+    ActivationService --> UnitOfWork
+    ActivationPolicy --> ActivationPermit
+    ActivationPermit --> Customer
+
+    ContactService --> ContactLifecyclePolicy
+    ContactService --> IdentityRegistry
+    ContactService --> Repositories
+    ContactService --> UnitOfWork
+    IdentityRegistry --> ReservationProof
+    ReservationProof --> ContactBook
+
+    ContactService --> IdentityOutbox
+    IdentityOutbox --> OutboxPolicy
+    IdentityOutbox --> IdentityRegistry
+
+    UnitOfWork --> EventEnvelopeFactory
+    EventEnvelopeFactory --> EventEnvelope
+
+    Customer --> PendingEvents
+    ContactBook --> PendingEvents
+    Profile --> PendingEvents
+    Preferences --> PendingEvents
+    ConsentLedger --> PendingEvents
+    IdentityEntry --> PendingEvents
+    PendingEvents --> DomainEvents
+    DomainEvents --> EventEnvelope
+    ActionContext --> PrincipalRoleSnapshot
+    PrincipalRoleSnapshot --> EventEnvelope
+
+    IdentityNormalizer --> IdentityKey
+    IdentityRegistry --> IdentityEntry
+    IdentityEntry --> IdentityKey
+    IdentityRegistry --> IdentityRepository
+    IdentityRegistry --> IdentityEvent
+    IdentityRegistry --> IdentityError
+
+    EventEnvelope --> CommunicationProjection
+    EventEnvelope --> ContactAvailabilityProjection
+    EventEnvelope --> IdentityAuditProjection
+    IdentityEvent --> RegistryAuditProjection
+    CommunicationProjection --> NotificationDispatchPolicy
+    ContactAvailabilityProjection --> NotificationDispatchPolicy
+
+    CoreInvariants --> Customer
+    CoreInvariants --> ContactBook
+    CoreInvariants --> Profile
+    CoreInvariants --> Preferences
+    CoreInvariants --> ConsentLedger
+    ContactLifecyclePolicy --> ContactBook
+
+    subgraph Notes["MVP dependency notes"]
+        direction TB
+        NoteActivation["Activation reads ContactBook / ConsentLedger through service-loaded snapshots; Customer only receives ActivationPermit"]
+        NoteIdentity["ContactBook validates ReservationProof; IdentityRegistry owns uniqueness"]
+        NoteEvents["Aggregates create PendingEvents; EventEnvelope is created at persistence boundary"]
+        NoteConsistency["Cross-aggregate consistency lives in ApplicationService / UnitOfWork / Policies"]
+        NoteReadside["Read-side only consumes events and builds projections"]
+    end
+
+    ActivationPolicy -.-> NoteActivation
+    ReservationProof -.-> NoteIdentity
+    EventEnvelopeFactory -.-> NoteEvents
+    UnitOfWork -.-> NoteConsistency
+    ReadLane -.-> NoteReadside
+
+    subgraph Legend["Legend"]
+        direction TB
+        LegendAggregate["Blue = Aggregate"]
+        LegendValueObject["Green = Value Object"]
+        LegendState["Purple = State/Enum"]
+        LegendEvent["Yellow = Event"]
+        LegendError["Red = Domain Error"]
+        LegendPolicy["Pink = Invariant/Policy"]
+        LegendService["Orange = Service"]
+        LegendInfrastructure["Gray = Infrastructure/Read-side"]
+    end
+
+    classDef aggregate fill:#1D4ED8,stroke:#1E3A8A,stroke-width:3px,color:#FFFFFF
+    classDef valueObject fill:#DCFCE7,stroke:#16A34A,stroke-dasharray:5 5,color:#0F172A
+    classDef state fill:#F3E8FF,stroke:#7E22CE,color:#0F172A
+    classDef event fill:#FEF9C3,stroke:#CA8A04,color:#0F172A
+    classDef error fill:#FEE2E2,stroke:#DC2626,color:#0F172A
+    classDef policy fill:#FCE7F3,stroke:#DB2777,color:#0F172A
+    classDef service fill:#FFEDD5,stroke:#EA580C,color:#0F172A
+    classDef infrastructure fill:#F1F5F9,stroke:#64748B,stroke-dasharray:5 5,color:#0F172A
+
+    class Customer,ContactBook,Profile,Preferences,ConsentLedger,IdentityEntry,LegendAggregate aggregate
+    class ActionContext,PrincipalRoleSnapshot,ActivationPermit,ReservationProof,IdentityKey,AuthorizationDecision,LegendValueObject valueObject
+    class LegendState state
+    class PendingEvents,DomainEvents,EventEnvelope,IdentityEvent,LegendEvent event
+    class IdentityError,LegendError error
+    class ActivationPolicy,ContactLifecyclePolicy,CoreInvariants,OutboxPolicy,NotificationDispatchPolicy,LegendPolicy policy
+    class ActivationService,ContactService,IdentityRegistry,IdentityNormalizer,ActionContextFactory,LegendService service
+    class AccessContext,AuthContext,UnitOfWork,Repositories,IdentityOutbox,EventEnvelopeFactory,IdentityRepository,CommunicationProjection,ContactAvailabilityProjection,IdentityAuditProjection,RegistryAuditProjection,NoteActivation,NoteIdentity,NoteEvents,NoteConsistency,NoteReadside,LegendInfrastructure infrastructure

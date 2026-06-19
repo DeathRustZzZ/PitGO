@@ -90,3 +90,16 @@ classDiagram
     ContactLifecyclePolicy ..> CustomerActivationSnapshot : reads lifecycle snapshot
     ContactLifecyclePolicy ..> ContactEligibilitySnapshot : reads contact snapshot
     UnitOfWork ..> ActivationInvariants : enforces source versions at commit
+
+    style ActivationEligibilitySnapshot fill:#DCFCE7,stroke:#16A34A,stroke-dasharray:5 5,color:#0F172A
+    style ActivationPermit fill:#DCFCE7,stroke:#16A34A,stroke-dasharray:5 5,color:#0F172A
+    style EligibilityError fill:#FEE2E2,stroke:#DC2626,color:#0F172A
+    style CustomerActivationPolicy fill:#FFEDD5,stroke:#EA580C,color:#0F172A
+    style ActivationInvariants fill:#FCE7F3,stroke:#DB2777,color:#0F172A
+    style ConsentEligibilitySnapshot fill:#F1F5F9,stroke:#64748B,stroke-dasharray:5 5,color:#0F172A
+    style ContactEligibilitySnapshot fill:#F1F5F9,stroke:#64748B,stroke-dasharray:5 5,color:#0F172A
+    style ContactLifecyclePolicy fill:#F1F5F9,stroke:#64748B,stroke-dasharray:5 5,color:#0F172A
+    style Customer fill:#F1F5F9,stroke:#64748B,stroke-dasharray:5 5,color:#0F172A
+    style CustomerActivationApplicationService fill:#F1F5F9,stroke:#64748B,stroke-dasharray:5 5,color:#0F172A
+    style CustomerActivationSnapshot fill:#F1F5F9,stroke:#64748B,stroke-dasharray:5 5,color:#0F172A
+    style UnitOfWork fill:#F1F5F9,stroke:#64748B,stroke-dasharray:5 5,color:#0F172A

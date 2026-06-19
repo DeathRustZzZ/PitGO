@@ -51,3 +51,12 @@ classDiagram
     CustomerConsentLedger ..> DomainResult : command result
     CustomerActivationApplicationService --> CustomerConsentLedgerRepository : load
     CustomerCommunicationEligibilityProjection ..> CustomerConsentLedger : projects consent events
+
+    style CustomerConsentLedger fill:#1D4ED8,stroke:#1E3A8A,stroke-width:3px,color:#FFFFFF
+    style ConsentKind fill:#F3E8FF,stroke:#7E22CE,color:#0F172A
+    style EffectiveConsent fill:#F3E8FF,stroke:#7E22CE,color:#0F172A
+    style ConsentLedgerInvariants fill:#FCE7F3,stroke:#DB2777,color:#0F172A
+    style CustomerActivationApplicationService fill:#F1F5F9,stroke:#64748B,stroke-dasharray:5 5,color:#0F172A
+    style CustomerCommunicationEligibilityProjection fill:#F1F5F9,stroke:#64748B,stroke-dasharray:5 5,color:#0F172A
+    style CustomerConsentLedgerRepository fill:#F1F5F9,stroke:#64748B,stroke-dasharray:5 5,color:#0F172A
+    style DomainResult fill:#F1F5F9,stroke:#64748B,stroke-dasharray:5 5,color:#0F172A

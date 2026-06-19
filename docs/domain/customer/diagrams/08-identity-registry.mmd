@@ -161,3 +161,25 @@ classDiagram
     CustomerContactApplicationService --> IdentityRegistry : reserves identity before mutation
     CustomerContactApplicationService --> IdentityReservationProof : passes proof to contact book
     CustomerContactBook ..> IdentityReservationProof : validates reservation intent locally
+
+    style IdentityRegistryEntry fill:#DBEAFE,stroke:#2563EB,color:#0F172A
+    style ClaimedIdentity fill:#DCFCE7,stroke:#16A34A,stroke-dasharray:5 5,color:#0F172A
+    style IdentityKey fill:#DCFCE7,stroke:#16A34A,stroke-dasharray:5 5,color:#0F172A
+    style IdentityReservation fill:#DCFCE7,stroke:#16A34A,stroke-dasharray:5 5,color:#0F172A
+    style IdentityReservationId fill:#DCFCE7,stroke:#16A34A,stroke-dasharray:5 5,color:#0F172A
+    style IdentityReservationProof fill:#DCFCE7,stroke:#16A34A,stroke-dasharray:5 5,color:#0F172A
+    style NormalizedIdentityValue fill:#DCFCE7,stroke:#16A34A,stroke-dasharray:5 5,color:#0F172A
+    style IdentityKind fill:#F3E8FF,stroke:#7E22CE,color:#0F172A
+    style IdentityRegistryStatus fill:#F3E8FF,stroke:#7E22CE,color:#0F172A
+    style IdentityReservationStatus fill:#F3E8FF,stroke:#7E22CE,color:#0F172A
+    style IdentityRegistryEvent fill:#FEF9C3,stroke:#CA8A04,color:#0F172A
+    style IdentityReservationExpiredEvent fill:#FEF9C3,stroke:#CA8A04,color:#0F172A
+    style IdentityRegistryError fill:#FEE2E2,stroke:#DC2626,color:#0F172A
+    style IdentityNormalizer fill:#FFEDD5,stroke:#EA580C,color:#0F172A
+    style IdentityRegistryInvariants fill:#FCE7F3,stroke:#DB2777,color:#0F172A
+    style CustomerContactApplicationService fill:#F1F5F9,stroke:#64748B,stroke-dasharray:5 5,color:#0F172A
+    style CustomerContactBook fill:#F1F5F9,stroke:#64748B,stroke-dasharray:5 5,color:#0F172A
+    style IdentityOutbox fill:#F1F5F9,stroke:#64748B,stroke-dasharray:5 5,color:#0F172A
+    style IdentityOutboxDispatcher fill:#F1F5F9,stroke:#64748B,stroke-dasharray:5 5,color:#0F172A
+    style IdentityRegistry fill:#F1F5F9,stroke:#64748B,stroke-dasharray:5 5,color:#0F172A
+    style IdentityRegistryEntryRepository fill:#F1F5F9,stroke:#64748B,stroke-dasharray:5 5,color:#0F172A

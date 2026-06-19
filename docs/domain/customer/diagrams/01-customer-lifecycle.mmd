@@ -79,3 +79,15 @@ classDiagram
     Customer ..> CustomerError : returns
     CustomerError *-- CustomerActivationError : wraps
     Customer ..> ActivationInvariants : validates permit locally in activate
+
+    style Customer fill:#1D4ED8,stroke:#1E3A8A,stroke-width:3px,color:#FFFFFF
+    style CustomerStatus fill:#F3E8FF,stroke:#7E22CE,color:#0F172A
+    style CustomerActivationError fill:#FEE2E2,stroke:#DC2626,color:#0F172A
+    style CustomerError fill:#FEE2E2,stroke:#DC2626,color:#0F172A
+    style CustomerInvariants fill:#FCE7F3,stroke:#DB2777,color:#0F172A
+    style ActionContext fill:#F1F5F9,stroke:#64748B,stroke-dasharray:5 5,color:#0F172A
+    style ActivationInvariants fill:#F1F5F9,stroke:#64748B,stroke-dasharray:5 5,color:#0F172A
+    style ActivationPermit fill:#F1F5F9,stroke:#64748B,stroke-dasharray:5 5,color:#0F172A
+    style CustomerEvent fill:#F1F5F9,stroke:#64748B,stroke-dasharray:5 5,color:#0F172A
+    style DomainResult fill:#F1F5F9,stroke:#64748B,stroke-dasharray:5 5,color:#0F172A
+    style PendingCustomerEvent fill:#F1F5F9,stroke:#64748B,stroke-dasharray:5 5,color:#0F172A

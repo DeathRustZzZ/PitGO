@@ -134,3 +134,19 @@ classDiagram
     CustomerPreferences ..> DomainResult : command result
     EventEnvelopeFactory --> PendingPreferencesEvent : wraps
     CustomerCommunicationEligibilityProjection ..> CustomerPreferences : projects preferences events
+
+    style CustomerPreferences fill:#1D4ED8,stroke:#1E3A8A,stroke-width:3px,color:#FFFFFF
+    style CommunicationPreferences fill:#DCFCE7,stroke:#16A34A,stroke-dasharray:5 5,color:#0F172A
+    style NotificationPreferences fill:#DCFCE7,stroke:#16A34A,stroke-dasharray:5 5,color:#0F172A
+    style QuietHours fill:#DCFCE7,stroke:#16A34A,stroke-dasharray:5 5,color:#0F172A
+    style ContactMethod fill:#F3E8FF,stroke:#7E22CE,color:#0F172A
+    style DstResolutionPolicy fill:#F3E8FF,stroke:#7E22CE,color:#0F172A
+    style MessagePriorityPolicy fill:#F3E8FF,stroke:#7E22CE,color:#0F172A
+    style PendingPreferencesEvent fill:#FEF9C3,stroke:#CA8A04,color:#0F172A
+    style PreferencesEvent fill:#FEF9C3,stroke:#CA8A04,color:#0F172A
+    style PreferencesError fill:#FEE2E2,stroke:#DC2626,color:#0F172A
+    style PreferencesInvariants fill:#FCE7F3,stroke:#DB2777,color:#0F172A
+    style ActionContext fill:#F1F5F9,stroke:#64748B,stroke-dasharray:5 5,color:#0F172A
+    style CustomerCommunicationEligibilityProjection fill:#F1F5F9,stroke:#64748B,stroke-dasharray:5 5,color:#0F172A
+    style DomainResult fill:#F1F5F9,stroke:#64748B,stroke-dasharray:5 5,color:#0F172A
+    style EventEnvelopeFactory fill:#F1F5F9,stroke:#64748B,stroke-dasharray:5 5,color:#0F172A

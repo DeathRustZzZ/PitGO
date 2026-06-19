@@ -152,3 +152,32 @@ classDiagram
     IdentityOutboxDispatcher --> IdentityOutbox : polls and updates
     IdentityOutboxDispatcher --> IdentityRegistry : executes idempotent commands
     IdentityOutbox --> IdentityRegistry : eventually claims or releases
+
+    style AggregateRef fill:#DCFCE7,stroke:#16A34A,stroke-dasharray:5 5,color:#0F172A
+    style IdentityOutboxCommand fill:#F3E8FF,stroke:#7E22CE,color:#0F172A
+    style OptimisticLock fill:#F3E8FF,stroke:#7E22CE,color:#0F172A
+    style ActivationApplicationError fill:#FEE2E2,stroke:#DC2626,color:#0F172A
+    style ContactApplicationError fill:#FEE2E2,stroke:#DC2626,color:#0F172A
+    style ContactLifecyclePolicy fill:#FFEDD5,stroke:#EA580C,color:#0F172A
+    style OutboxInvariants fill:#FCE7F3,stroke:#DB2777,color:#0F172A
+    style AccessContext fill:#F1F5F9,stroke:#64748B,stroke-dasharray:5 5,color:#0F172A
+    style ActionContextFactory fill:#F1F5F9,stroke:#64748B,stroke-dasharray:5 5,color:#0F172A
+    style ActivationInvariants fill:#F1F5F9,stroke:#64748B,stroke-dasharray:5 5,color:#0F172A
+    style ContactBookInvariants fill:#F1F5F9,stroke:#64748B,stroke-dasharray:5 5,color:#0F172A
+    style ContactEligibilitySnapshot fill:#F1F5F9,stroke:#64748B,stroke-dasharray:5 5,color:#0F172A
+    style Customer fill:#F1F5F9,stroke:#64748B,stroke-dasharray:5 5,color:#0F172A
+    style CustomerActivationApplicationService fill:#F1F5F9,stroke:#64748B,stroke-dasharray:5 5,color:#0F172A
+    style CustomerActivationPolicy fill:#F1F5F9,stroke:#64748B,stroke-dasharray:5 5,color:#0F172A
+    style CustomerActivationSnapshot fill:#F1F5F9,stroke:#64748B,stroke-dasharray:5 5,color:#0F172A
+    style CustomerConsentLedgerRepository fill:#F1F5F9,stroke:#64748B,stroke-dasharray:5 5,color:#0F172A
+    style CustomerContactApplicationService fill:#F1F5F9,stroke:#64748B,stroke-dasharray:5 5,color:#0F172A
+    style CustomerContactBookRepository fill:#F1F5F9,stroke:#64748B,stroke-dasharray:5 5,color:#0F172A
+    style CustomerRepository fill:#F1F5F9,stroke:#64748B,stroke-dasharray:5 5,color:#0F172A
+    style EventEnvelopeFactory fill:#F1F5F9,stroke:#64748B,stroke-dasharray:5 5,color:#0F172A
+    style IdentityNormalizer fill:#F1F5F9,stroke:#64748B,stroke-dasharray:5 5,color:#0F172A
+    style IdentityOutbox fill:#F1F5F9,stroke:#64748B,stroke-dasharray:5 5,color:#0F172A
+    style IdentityOutboxDispatcher fill:#F1F5F9,stroke:#64748B,stroke-dasharray:5 5,color:#0F172A
+    style IdentityRegistry fill:#F1F5F9,stroke:#64748B,stroke-dasharray:5 5,color:#0F172A
+    style IdentityReservationProof fill:#F1F5F9,stroke:#64748B,stroke-dasharray:5 5,color:#0F172A
+    style UnitOfWork fill:#F1F5F9,stroke:#64748B,stroke-dasharray:5 5,color:#0F172A
+    style VersionedEntity fill:#F1F5F9,stroke:#64748B,stroke-dasharray:5 5,color:#0F172A

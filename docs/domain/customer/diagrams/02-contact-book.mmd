@@ -115,3 +115,27 @@ classDiagram
     ContactLifecyclePolicy ..> ContactEligibilitySnapshot : reads contact snapshot
     ContactLifecyclePolicy ..> ContactBookInvariants : removing last contact when Active is cross aggregate
     CustomerContactAvailabilityProjection ..> CustomerContactBook : projects verified contact events
+
+    style CustomerContactBook fill:#1D4ED8,stroke:#1E3A8A,stroke-width:3px,color:#FFFFFF
+    style EmailContact fill:#DCFCE7,stroke:#16A34A,stroke-dasharray:5 5,color:#0F172A
+    style PhoneContact fill:#DCFCE7,stroke:#16A34A,stroke-dasharray:5 5,color:#0F172A
+    style PrimaryContact fill:#DCFCE7,stroke:#16A34A,stroke-dasharray:5 5,color:#0F172A
+    style TelegramContact fill:#DCFCE7,stroke:#16A34A,stroke-dasharray:5 5,color:#0F172A
+    style VerificationStatus fill:#F3E8FF,stroke:#7E22CE,color:#0F172A
+    style ContactError fill:#FEE2E2,stroke:#DC2626,color:#0F172A
+    style ContactBookInvariants fill:#FCE7F3,stroke:#DB2777,color:#0F172A
+    style ContactApplicationError fill:#F1F5F9,stroke:#64748B,stroke-dasharray:5 5,color:#0F172A
+    style ContactEligibilitySnapshot fill:#F1F5F9,stroke:#64748B,stroke-dasharray:5 5,color:#0F172A
+    style ContactLifecyclePolicy fill:#F1F5F9,stroke:#64748B,stroke-dasharray:5 5,color:#0F172A
+    style CustomerActivationSnapshot fill:#F1F5F9,stroke:#64748B,stroke-dasharray:5 5,color:#0F172A
+    style CustomerContactApplicationService fill:#F1F5F9,stroke:#64748B,stroke-dasharray:5 5,color:#0F172A
+    style CustomerContactAvailabilityProjection fill:#F1F5F9,stroke:#64748B,stroke-dasharray:5 5,color:#0F172A
+    style CustomerContactBookRepository fill:#F1F5F9,stroke:#64748B,stroke-dasharray:5 5,color:#0F172A
+    style CustomerRepository fill:#F1F5F9,stroke:#64748B,stroke-dasharray:5 5,color:#0F172A
+    style DomainResult fill:#F1F5F9,stroke:#64748B,stroke-dasharray:5 5,color:#0F172A
+    style IdentityNormalizer fill:#F1F5F9,stroke:#64748B,stroke-dasharray:5 5,color:#0F172A
+    style IdentityOutbox fill:#F1F5F9,stroke:#64748B,stroke-dasharray:5 5,color:#0F172A
+    style IdentityRegistry fill:#F1F5F9,stroke:#64748B,stroke-dasharray:5 5,color:#0F172A
+    style IdentityReservationProof fill:#F1F5F9,stroke:#64748B,stroke-dasharray:5 5,color:#0F172A
+    style PendingContactEvent fill:#F1F5F9,stroke:#64748B,stroke-dasharray:5 5,color:#0F172A
+    style UnitOfWork fill:#F1F5F9,stroke:#64748B,stroke-dasharray:5 5,color:#0F172A
