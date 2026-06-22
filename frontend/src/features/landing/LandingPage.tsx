@@ -93,8 +93,8 @@ export function LandingPage() {
 
           <nav className={styles.nav}>
             <a href="#features">Возможности</a>
-            <a href="#garages">Для СТО</a>
-            <a href="#clients">Клиенты</a>
+            <Link to="/vehicles">Мой гараж</Link>
+            <Link to="/app">CRM</Link>
           </nav>
 
           <div className={styles.actions}>
@@ -102,12 +102,12 @@ export function LandingPage() {
               className={styles.loginAction}
               variant="ghost"
               size="sm"
-              onClick={goRegister}
+              onClick={() => navigate("/app")}
             >
-              Войти
+              Войти в СТО
             </Button>
             <Button size="sm" onClick={goRegister}>
-              Попробовать
+              Зарегистрироваться
             </Button>
           </div>
         </div>
@@ -131,10 +131,10 @@ export function LandingPage() {
             </p>
             <div className={styles.heroActions}>
               <Button size="md" onClick={goRegister}>
-                Начать бесплатно
+                Зарегистрироваться
               </Button>
-              <Button variant="secondary" size="md" onClick={goRegister}>
-                Для автосервисов
+              <Button variant="secondary" size="md" onClick={() => navigate("/app")}>
+                Открыть CRM
               </Button>
             </div>
             <p className={styles.trust}>
@@ -207,9 +207,14 @@ export function LandingPage() {
                 Создайте аккаунт за минуту и запишитесь в автосервис уже
                 сегодня.
               </p>
+              <div style={{ display: "flex", gap: "12px", justifyContent: "center", flexWrap: "wrap" }}>
               <Button variant="secondary" size="md" onClick={goRegister}>
-                Создать аккаунт
+                Зарегистрироваться
               </Button>
+              <Button size="md" onClick={() => navigate("/vehicles")}>
+                Мой гараж
+              </Button>
+            </div>
             </div>
           </div>
         </section>
@@ -222,8 +227,9 @@ export function LandingPage() {
           </span>
           <nav className={styles.footerLinks}>
             <a href="#features">Возможности</a>
-            <a href="#garages">Для СТО</a>
-            <a href="#clients">Клиенты</a>
+            <Link to="/register">Регистрация</Link>
+            <Link to="/vehicles">Гараж</Link>
+            <Link to="/app">CRM панель</Link>
           </nav>
         </div>
       </footer>
