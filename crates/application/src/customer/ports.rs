@@ -1,3 +1,4 @@
+use crate::error::RepositoryError;
 use domain::CustomerId;
 use domain::VehicleId;
 use domain::customer::aggregate::Customer;
