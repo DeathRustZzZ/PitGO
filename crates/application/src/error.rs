@@ -1,13 +1,13 @@
 use thiserror::Error;
 
-#[derive(Debug, Clone, PartialEq, Eq, Error)]
+#[derive(Debug, Error)]
+pub enum ApplicationError {
+    #[error(transparent)]
+    Repository(#[from] RepositoryError),
+}
+
+#[derive(Debug, Error)]
 pub enum RepositoryError {
-    #[error("Connection error")]
-    Connection,
-
-    #[error("Concurrency conflict")]
-    ConcurrencyConflict,
-
-    #[error("{0}")]
-    Infrastructure(String),
+    #[error("Repository operation failed")]
+    Failed,
 }
