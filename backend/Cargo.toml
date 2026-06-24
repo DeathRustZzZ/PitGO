@@ -4,7 +4,14 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+# Local dependencies
+application = { path = "../crates/application" }
+domain = { path = "../crates/domain" }
+
+# External dependencies
 axum = { workspace = true }
 tokio = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
+serde = { workspace = true }
+uuid = { workspace = true }

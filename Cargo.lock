@@ -94,10 +94,14 @@ dependencies = [
 name = "backend"
 version = "0.1.0"
 dependencies = [
+ "application",
  "axum",
+ "domain",
+ "serde",
  "tokio",
  "tracing",
  "tracing-subscriber",
+ "uuid",
 ]
 
 [[package]]
