@@ -133,7 +133,11 @@ export function LandingPage() {
               <Button size="md" onClick={goRegister}>
                 Зарегистрироваться
               </Button>
-              <Button variant="secondary" size="md" onClick={() => navigate("/app")}>
+              <Button
+                variant="secondary"
+                size="md"
+                onClick={() => navigate("/app")}
+              >
                 Открыть CRM
               </Button>
             </div>
@@ -207,14 +211,21 @@ export function LandingPage() {
                 Создайте аккаунт за минуту и запишитесь в автосервис уже
                 сегодня.
               </p>
-              <div style={{ display: "flex", gap: "12px", justifyContent: "center", flexWrap: "wrap" }}>
-              <Button variant="secondary" size="md" onClick={goRegister}>
-                Зарегистрироваться
-              </Button>
-              <Button size="md" onClick={() => navigate("/vehicles")}>
-                Мой гараж
-              </Button>
-            </div>
+              <div
+                style={{
+                  display: "flex",
+                  gap: "12px",
+                  justifyContent: "center",
+                  flexWrap: "wrap",
+                }}
+              >
+                <Button variant="secondary" size="md" onClick={goRegister}>
+                  Зарегистрироваться
+                </Button>
+                <Button size="md" onClick={() => navigate("/vehicles")}>
+                  Мой гараж
+                </Button>
+              </div>
             </div>
           </div>
         </section>
