@@ -12,6 +12,7 @@ pub struct CreateVehicleHandler {
 
 /// Implementation of the CreateVehicleHandler
 impl CreateVehicleHandler {
+    /// Create a new instance of the handler
     pub fn new(repository: Arc<dyn VehicleRepository>) -> Self {
         Self { repository }
     }
