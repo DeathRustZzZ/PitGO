@@ -80,7 +80,6 @@ All dependency versions are centralized in the root `Cargo.toml` under `[workspa
 
 ## Code Conventions
 
-- Comments and documentation in Russian.
 - Aggregate roots have private fields; state changes only through command methods.
 - Repository interfaces are traits defined in the domain layer.
 - Frontend uses ESLint + Prettier with format-on-save. TypeScript strict mode enabled (`noUnusedLocals`, `noUnusedParameters`, `noFallthroughCasesInSwitch`).
