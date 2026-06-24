@@ -5,6 +5,7 @@ use chrono::Utc;
 use domain::customer::aggregate::Customer;
 use std::sync::Arc;
 
+/// Handler for creating a new customer
 pub struct CreateCustomerHandler {
     repository: Arc<dyn CustomerRepository>,
 }
