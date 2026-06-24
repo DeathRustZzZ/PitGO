@@ -1,11 +1,19 @@
+use domain::vehicle_ownership::OwnershipError;
 use thiserror::Error;
 
 #[derive(Debug, Error)]
+
+/// ApplicationError is the top-level error type for the application layer
 pub enum ApplicationError {
+    /// Error when the entity already exists in the repository
     #[error(transparent)]
     Repository(#[from] RepositoryError),
+    /// Error when there is a domain-specific error related to ownership
+    #[error(transparent)]
+    Ownership(#[from] OwnershipError),
 }
 
+/// RepositoryError represents errors that can occur in the repository layer
 #[derive(Debug, Clone, PartialEq, Eq, Error)]
 pub enum RepositoryError {
     /// Error when the entity already exists in the repository
