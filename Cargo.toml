@@ -8,6 +8,7 @@ edition = "2021"
 license = "MIT"
 
 [workspace.dependencies]
+
 shared = { path = "crates/shared" }
 async-trait = "0.1"
 axum = "0.8.9"

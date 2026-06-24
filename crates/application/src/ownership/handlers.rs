@@ -16,7 +16,7 @@ impl StartVehicleOwnershipHandler {
     pub fn new(repository: Arc<dyn VehicleOwnershipRepository>) -> Self {
         Self { repository }
     }
-
+    /// Handles the StartVehicleOwnershipCommand
     pub fn handle(&self, cmd: StartVehicleOwnershipCommand) -> Result<(), ApplicationError> {
         let now = Utc::now();
         let has_active_ownership = self.repository.has_active_ownership(cmd.vehicle_id)?;
