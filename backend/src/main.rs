@@ -1,11 +1,17 @@
-use axum::{Router, routing::get};
+use axum::{
+    Router,
+    routing::{get, post},
+};
+mod routers;
 use std::net::SocketAddr;
 
 #[tokio::main]
 async fn main() {
     tracing_subscriber::fmt::init();
 
-    let app = Router::new().route("/health", get(health));
+    let app = Router::new()
+        .route("/health", get(health))
+        .route("/customers", post(routers::customer::create_customer));
 
     let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
 
