@@ -1,6 +1,11 @@
 use axum::{Json, http::StatusCode};
 use serde::Deserialize;
+use std::sync::Arc;
 use uuid::Uuid;
+
+use application::customer::commands::CreateCustomerCommand;
+use application::customer::handlers::CreateCustomerHandler;
+use infrastructure::InMemoryCustomerRepository;
 
 /// Request body for creating a new customer
 #[derive(Deserialize)]
@@ -8,8 +13,18 @@ pub struct CreateCustomerRequest {
     pub customer_id: Uuid,
 }
 
-/// Create a new customer
+/// Handler for the POST /customers endpoint
 pub async fn create_customer(Json(body): Json<CreateCustomerRequest>) -> StatusCode {
-    println!("Customer id {}", body.customer_id);
-    StatusCode::CREATED
+    let cmd = CreateCustomerCommand {
+        customer_id: body.customer_id.into(),
+    };
+
+    let repository = Arc::new(InMemoryCustomerRepository::new());
+
+    let handler = CreateCustomerHandler::new(repository);
+
+    match handler.handle(cmd) {
+        Ok(()) => StatusCode::CREATED,
+        Err(_e) => StatusCode::CONFLICT,
+    }
 }

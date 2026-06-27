@@ -17,7 +17,10 @@ use crate::ids::CustomerId;
 /// выделены в отдельные агрегаты (`CustomerContactBook`, `CustomerProfile`, …).
 ///
 /// Поля приватные: состояние изменяется только именованными командными методами.
-#[derive(Debug)]
+///
+/// Clone временная необходимость для тестов и репозитория в памяти. В реальном приложении !!!
+/// Убрать после реализиции Postgres репозитория.
+#[derive(Debug, Clone)]
 pub struct Customer {
     id: CustomerId,
     status: CustomerStatus,

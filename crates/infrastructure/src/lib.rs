@@ -1,14 +1,49 @@
-pub fn add(left: u64, right: u64) -> u64 {
-    left + right
+use std::collections::HashMap;
+use std::sync::Mutex;
+
+use application::customer::ports::CustomerRepository;
+use application::error::RepositoryError;
+use domain::CustomerId;
+use domain::customer::Customer;
+
+/// An in-memory implementation of the CustomerRepository trait
+pub struct InMemoryCustomerRepository {
+    customers: Mutex<HashMap<CustomerId, Customer>>,
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+/// Creates a new instance of InMemoryCustomerRepository
+impl InMemoryCustomerRepository {
+    pub fn new() -> Self {
+        Self {
+            customers: Mutex::new(HashMap::new()),
+        }
+    }
+}
 
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
+impl CustomerRepository for InMemoryCustomerRepository {
+    fn save(&self, customer: &Customer) -> Result<(), application::error::RepositoryError> {
+        let mut customers = self
+            .customers
+            .lock()
+            .map_err(|_| RepositoryError::Unknown)?;
+
+        customers.insert(customer.id(), customer.clone());
+
+        Ok(())
+    }
+
+    fn find_by_id(&self, customer_id: CustomerId) -> Result<Option<Customer>, RepositoryError> {
+        let customers = self
+            .customers
+            .lock()
+            .map_err(|_| RepositoryError::Unknown)?;
+
+        Ok(customers.get(&customer_id).cloned())
+    }
+}
+
+impl Default for InMemoryCustomerRepository {
+    fn default() -> Self {
+        Self::new()
     }
 }

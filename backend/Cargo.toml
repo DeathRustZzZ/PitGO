@@ -6,7 +6,7 @@ edition = "2024"
 [dependencies]
 # Local dependencies
 application = { path = "../crates/application" }
-domain = { path = "../crates/domain" }
+infrastructure = { path = "../crates/infrastructure"}
 
 # External dependencies
 axum = { workspace = true }

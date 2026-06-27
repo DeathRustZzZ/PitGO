@@ -96,7 +96,7 @@ version = "0.1.0"
 dependencies = [
  "application",
  "axum",
- "domain",
+ "infrastructure",
  "serde",
  "tokio",
  "tracing",
@@ -388,6 +388,11 @@ dependencies = [
 [[package]]
 name = "infrastructure"
 version = "0.1.0"
+dependencies = [
+ "application",
+ "domain",
+ "shared",
+]
 
 [[package]]
 name = "itoa"
