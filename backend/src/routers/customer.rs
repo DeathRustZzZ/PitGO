@@ -1,3 +1,4 @@
+use application::error::{ApplicationError, RepositoryError};
 use axum::{Json, http::StatusCode};
 use serde::Deserialize;
 use std::sync::Arc;
@@ -25,6 +26,12 @@ pub async fn create_customer(Json(body): Json<CreateCustomerRequest>) -> StatusC
 
     match handler.handle(cmd) {
         Ok(()) => StatusCode::CREATED,
-        Err(_e) => StatusCode::CONFLICT,
+        Err(e) => match e {
+            ApplicationError::Repository(repo_err) => match repo_err {
+                RepositoryError::VersionConflict { .. } => StatusCode::CONFLICT,
+                RepositoryError::StorageFailure(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            },
+            ApplicationError::Ownership(_) => StatusCode::UNPROCESSABLE_ENTITY,
+        },
     }
 }
