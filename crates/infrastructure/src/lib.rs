@@ -25,8 +25,7 @@ impl CustomerRepository for InMemoryCustomerRepository {
         let mut customers = self
             .customers
             .lock()
-            .map_err(|_| RepositoryError::Unknown)?;
-
+            .map_err(|e| RepositoryError::StorageFailure(e.to_string()))?;
         customers.insert(customer.id(), customer.clone());
 
         Ok(())
@@ -36,8 +35,7 @@ impl CustomerRepository for InMemoryCustomerRepository {
         let customers = self
             .customers
             .lock()
-            .map_err(|_| RepositoryError::Unknown)?;
-
+            .map_err(|e| RepositoryError::StorageFailure(e.to_string()))?;
         Ok(customers.get(&customer_id).cloned())
     }
 }

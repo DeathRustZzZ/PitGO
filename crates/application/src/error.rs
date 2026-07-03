@@ -22,7 +22,4 @@ pub enum RepositoryError {
     /// Error when there is a storage failure in the repository
     #[error("storage failure: {0}")]
     StorageFailure(String),
-
-    #[error("unknown repository error")]
-    Unknown,
 }
