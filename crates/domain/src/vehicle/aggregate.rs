@@ -18,7 +18,10 @@ use crate::vehicle::state::VehicleStatus;
 /// является отдельным Aggregate Root.
 ///
 /// Поля приватные — состояние изменяется только именованными командами.
-#[derive(Debug)]
+///
+/// Clone временная необходимость для тестов и репозитория в памяти. В реальном приложении !!!
+/// Убрать после реализиции Postgres репозитория.
+#[derive(Debug, Clone)]
 pub struct Vehicle {
     id: VehicleId,
     status: VehicleStatus,
