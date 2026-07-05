@@ -1,17 +1,29 @@
+use application::customer::ports::CustomerRepository;
 use axum::{
     Router,
     routing::{get, post},
 };
+use infrastructure::InMemoryCustomerRepository;
 mod routers;
-use std::net::SocketAddr;
+use std::{net::SocketAddr, sync::Arc};
+
+#[derive(Clone)]
+struct AppState {
+    customer_repository: Arc<dyn CustomerRepository>,
+}
 
 #[tokio::main]
 async fn main() {
     tracing_subscriber::fmt::init();
 
+    let state = AppState {
+        customer_repository: Arc::new(InMemoryCustomerRepository::new()),
+    };
+
     let app = Router::new()
         .route("/health", get(health))
-        .route("/customers", post(routers::customer::create_customer));
+        .route("/customers", post(routers::customer::create_customer))
+        .with_state(state);
 
     let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
 
