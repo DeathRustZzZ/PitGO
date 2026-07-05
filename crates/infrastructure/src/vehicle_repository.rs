@@ -5,12 +5,12 @@ use domain::vehicle::Vehicle;
 use std::collections::HashMap;
 use std::sync::Mutex;
 
-/// An in-memory implementation of the CustomerRepository trait
+/// An in-memory implementation of the VehicleRepository trait for testing purposes.
 pub struct InMemoryVehicleRepository {
     vehicle: Mutex<HashMap<VehicleId, Vehicle>>,
 }
 
-/// Creates a new instance of InMemoryCustomerRepository
+/// Creates a new instance of InMemoryVehicleRepository with an empty vehicle storage.
 impl InMemoryVehicleRepository {
     pub fn new() -> Self {
         Self {
@@ -20,12 +20,12 @@ impl InMemoryVehicleRepository {
 }
 
 impl VehicleRepository for InMemoryVehicleRepository {
-    fn save(&self, customer: &Vehicle) -> Result<(), application::error::RepositoryError> {
-        let mut vehicls = self
+    fn save(&self, vehicle: &Vehicle) -> Result<(), application::error::RepositoryError> {
+        let mut vehicles = self
             .vehicle
             .lock()
             .map_err(|e| RepositoryError::StorageFailure(e.to_string()))?;
-        vehicls.insert(customer.id(), customer.clone());
+        vehicles.insert(vehicle.id(), vehicle.clone());
 
         Ok(())
     }

@@ -26,7 +26,7 @@ async fn main() {
     let app = Router::new()
         .route("/health", get(health))
         .route("/customers", post(routers::customer::create_customer))
-        .route("/vehicle", post(routers::vehicle::create_vehicle))
+        .route("/vehicles", post(routers::vehicle::create_vehicle))
         .with_state(state);
 
     let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
