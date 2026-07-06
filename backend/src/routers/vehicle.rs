@@ -1,9 +1,9 @@
 use crate::AppState;
-use application::error::{ApplicationError, RepositoryError};
+use crate::error::ApiError;
 use application::vehicle::commands::CreateVehicleCommand;
 use application::vehicle::handlers::CreateVehicleHandler;
+use axum::Json;
 use axum::extract::State;
-use axum::{Json, http::StatusCode};
 use serde::Deserialize;
 use uuid::Uuid;
 
@@ -15,7 +15,7 @@ pub struct CreateVehicleRequest {
 pub async fn create_vehicle(
     State(state): State<AppState>,
     Json(body): Json<CreateVehicleRequest>,
-) -> StatusCode {
+) -> Result<Json<String>, ApiError> {
     let cmd = CreateVehicleCommand {
         vehicle_id: body.vehicle_id.into(),
     };
@@ -24,14 +24,6 @@ pub async fn create_vehicle(
 
     let handler = CreateVehicleHandler::new(repository);
 
-    match handler.handle(cmd) {
-        Ok(()) => StatusCode::CREATED,
-        Err(e) => match e {
-            ApplicationError::Repository(repo_err) => match repo_err {
-                RepositoryError::VersionConflict { .. } => StatusCode::CONFLICT,
-                RepositoryError::StorageFailure(_) => StatusCode::INTERNAL_SERVER_ERROR,
-            },
-            ApplicationError::Ownership(_) => StatusCode::UNPROCESSABLE_ENTITY,
-        },
-    }
+    handler.handle(cmd)?;
+    Ok(Json("Vehicle created successfully".to_string()))
 }

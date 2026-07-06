@@ -5,6 +5,7 @@ use axum::{
 };
 use infrastructure::customer_repository::InMemoryCustomerRepository;
 use infrastructure::vehicle_repository::InMemoryVehicleRepository;
+mod error;
 mod routers;
 use std::{net::SocketAddr, sync::Arc};
 

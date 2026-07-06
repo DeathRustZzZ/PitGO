@@ -1,13 +1,12 @@
-use application::error::{ApplicationError, RepositoryError};
+use axum::Json;
 use axum::extract::State;
-use axum::{Json, http::StatusCode};
 use serde::Deserialize;
 use uuid::Uuid;
 
+use crate::AppState;
+use crate::error::ApiError;
 use application::customer::commands::CreateCustomerCommand;
 use application::customer::handlers::CreateCustomerHandler;
-
-use crate::AppState;
 
 /// Request body for creating a new customer
 #[derive(Deserialize)]
@@ -19,7 +18,7 @@ pub struct CreateCustomerRequest {
 pub async fn create_customer(
     State(state): State<AppState>,
     Json(body): Json<CreateCustomerRequest>,
-) -> StatusCode {
+) -> Result<Json<String>, ApiError> {
     let cmd = CreateCustomerCommand {
         customer_id: body.customer_id.into(),
     };
@@ -28,14 +27,6 @@ pub async fn create_customer(
 
     let handler = CreateCustomerHandler::new(repository);
 
-    match handler.handle(cmd) {
-        Ok(()) => StatusCode::CREATED,
-        Err(e) => match e {
-            ApplicationError::Repository(repo_err) => match repo_err {
-                RepositoryError::VersionConflict { .. } => StatusCode::CONFLICT,
-                RepositoryError::StorageFailure(_) => StatusCode::INTERNAL_SERVER_ERROR,
-            },
-            ApplicationError::Ownership(_) => StatusCode::UNPROCESSABLE_ENTITY,
-        },
-    }
+    handler.handle(cmd)?;
+    Ok(Json("Customer created successfully".to_string()))
 }
