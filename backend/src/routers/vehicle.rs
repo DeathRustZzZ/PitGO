@@ -9,6 +9,7 @@ use application::vehicle::commands::CreateVehicleCommand;
 use application::vehicle::handlers::CreateVehicleHandler;
 use axum::Json;
 use axum::extract::State;
+use axum::http::StatusCode;
 use serde::Deserialize;
 use uuid::Uuid;
 
@@ -26,7 +27,7 @@ pub struct CreateVehicleRequest {
 pub async fn create_vehicle(
     State(state): State<AppState>,
     Json(body): Json<CreateVehicleRequest>,
-) -> Result<Json<String>, ApiError> {
+) -> Result<(StatusCode, Json<String>), ApiError> {
     let cmd = CreateVehicleCommand {
         vehicle_id: body.vehicle_id.into(),
     };
@@ -36,5 +37,8 @@ pub async fn create_vehicle(
     let handler = CreateVehicleHandler::new(repository);
 
     handler.handle(cmd)?;
-    Ok(Json("Vehicle created successfully".to_string()))
+    Ok((
+        StatusCode::CREATED,
+        Json("Vehicle created successfully".to_string()),
+    ))
 }

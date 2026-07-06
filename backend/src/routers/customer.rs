@@ -5,6 +5,7 @@
 
 use axum::Json;
 use axum::extract::State;
+use axum::http::StatusCode;
 use serde::Deserialize;
 use uuid::Uuid;
 
@@ -27,7 +28,7 @@ pub struct CreateCustomerRequest {
 pub async fn create_customer(
     State(state): State<AppState>,
     Json(body): Json<CreateCustomerRequest>,
-) -> Result<Json<String>, ApiError> {
+) -> Result<(StatusCode, Json<String>), ApiError> {
     let cmd = CreateCustomerCommand {
         customer_id: body.customer_id.into(),
     };
@@ -37,5 +38,8 @@ pub async fn create_customer(
     let handler = CreateCustomerHandler::new(repository);
 
     handler.handle(cmd)?;
-    Ok(Json("Customer created successfully".to_string()))
+    Ok((
+        StatusCode::CREATED,
+        Json("Customer created successfully".to_string()),
+    ))
 }
