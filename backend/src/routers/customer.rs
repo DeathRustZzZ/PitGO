@@ -1,3 +1,8 @@
+//! HTTP routes for customer operations.
+//!
+//! This module translates customer API requests into application-layer commands
+//! and returns transport-level responses.
+
 use axum::Json;
 use axum::extract::State;
 use serde::Deserialize;
@@ -8,13 +13,17 @@ use crate::error::ApiError;
 use application::customer::commands::CreateCustomerCommand;
 use application::customer::handlers::CreateCustomerHandler;
 
-/// Request body for creating a new customer
+/// Request body for creating a new customer.
 #[derive(Deserialize)]
 pub struct CreateCustomerRequest {
+    /// Client-provided customer identifier.
     pub customer_id: Uuid,
 }
 
-/// Handler for the POST /customers endpoint
+/// Handles `POST /customers`.
+///
+/// Builds a `CreateCustomerCommand`, delegates business behavior to the
+/// application layer, and maps any application error into `ApiError`.
 pub async fn create_customer(
     State(state): State<AppState>,
     Json(body): Json<CreateCustomerRequest>,
