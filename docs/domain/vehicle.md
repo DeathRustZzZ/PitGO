@@ -1,8 +1,3 @@
-> **DESIGN SPECIFICATION — NOT IMPLEMENTED**
->
-> This document describes the intended domain architecture.
-> Most aggregates, policies, repositories, events, and application services described here are not implemented in Rust yet.
-
 # Vehicle domain model
 
 Модель описывает конкретный автомобиль в PitGO. Она не является каталогом
