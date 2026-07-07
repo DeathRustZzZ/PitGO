@@ -1,9 +1,13 @@
-use application::{customer::ports::CustomerRepository, vehicle::ports::VehicleRepository};
+use application::{
+    customer::ports::CustomerRepository, ownership::ports::VehicleOwnershipRepository,
+    vehicle::ports::VehicleRepository,
+};
 use axum::{
     Router,
     routing::{get, post},
 };
 use infrastructure::customer_repository::InMemoryCustomerRepository;
+use infrastructure::vehicle_ownership_repository::InMemoryVehicleOwnershipRepository;
 use infrastructure::vehicle_repository::InMemoryVehicleRepository;
 mod error;
 mod routers;
@@ -13,6 +17,7 @@ use std::{net::SocketAddr, sync::Arc};
 struct AppState {
     customer_repository: Arc<dyn CustomerRepository>,
     vehicle_repository: Arc<dyn VehicleRepository>,
+    vehicle_ownership_repository: Arc<dyn VehicleOwnershipRepository>,
 }
 
 #[tokio::main]
@@ -22,12 +27,17 @@ async fn main() {
     let state = AppState {
         customer_repository: Arc::new(InMemoryCustomerRepository::new()),
         vehicle_repository: Arc::new(InMemoryVehicleRepository::new()),
+        vehicle_ownership_repository: Arc::new(InMemoryVehicleOwnershipRepository::new()),
     };
 
     let app = Router::new()
         .route("/health", get(health))
         .route("/customers", post(routers::customer::create_customer))
         .route("/vehicles", post(routers::vehicle::create_vehicle))
+        .route(
+            "/vehicle_ownerships",
+            post(routers::vehicle_ownership::create_vehicle_ownership),
+        )
         .with_state(state);
 
     let addr = SocketAddr::from(([127, 0, 0, 1], 3000));

@@ -24,7 +24,9 @@ use crate::vehicle_ownership::state::{OwnershipPeriod, OwnershipStatus, Ownershi
 /// `VehicleId` является только ссылкой — объект `Vehicle` не загружается.
 ///
 /// Поля приватные — состояние изменяется только именованными командами.
-#[derive(Debug)]
+///
+/// !!! Clone не забыть убрать после добавления PostgreSQL
+#[derive(Debug, Clone)]
 pub struct VehicleOwnership {
     id: VehicleOwnershipId,
     vehicle_id: VehicleId,
