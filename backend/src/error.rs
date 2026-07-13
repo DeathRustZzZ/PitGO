@@ -72,6 +72,19 @@ impl ApiError {
             },
         }
     }
+
+    /// Creates a `404 Not Found` response.
+    ///
+    /// Used when the requested resource does not exist.
+    pub fn not_found(message: &str) -> Self {
+        Self {
+            status: StatusCode::NOT_FOUND,
+            body: ErrorBody {
+                error: "not_found".to_string(),
+                message: message.to_string(),
+            },
+        }
+    }
 }
 
 impl IntoResponse for ApiError {
