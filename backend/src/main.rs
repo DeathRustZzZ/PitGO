@@ -35,6 +35,7 @@ async fn main() {
         .route("/customers", post(routers::customer::create_customer))
         .route("/customers/{id}", get(routers::customer::get_customer))
         .route("/vehicles", post(routers::vehicle::create_vehicle))
+        .route("/vehicles/{id}", get(routers::vehicle::get_vehicle))
         .route(
             "/vehicle_ownerships",
             post(routers::vehicle_ownership::create_vehicle_ownership),
