@@ -25,6 +25,19 @@ impl VehicleRepository for InMemoryVehicleRepository {
             .vehicle
             .lock()
             .map_err(|e| RepositoryError::StorageFailure(e.to_string()))?;
+
+        let actual = vehicle.version();
+        let expected = vehicles
+            .get(&vehicle.id())
+            .map(|stored| stored.version().next());
+        if let Some(expected_version) = expected
+            && expected_version != actual
+        {
+            return Err(RepositoryError::VersionConflict {
+                expected: expected_version.value(),
+                actual: actual.value(),
+            });
+        }
         vehicles.insert(vehicle.id(), vehicle.clone());
 
         Ok(())
