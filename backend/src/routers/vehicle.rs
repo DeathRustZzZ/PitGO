@@ -52,6 +52,7 @@ pub async fn create_vehicle(
     ))
 }
 
+/// Handles `GET /vehicles/{id}`.
 pub async fn get_vehicle(
     State(state): State<AppState>,
     Path(id): Path<Uuid>,
@@ -65,6 +66,6 @@ pub async fn get_vehicle(
             created_at: vehicle.created_at(),
             updated_at: vehicle.updated_at(),
         })),
-        None => Err(ApiError::not_found("Vehicle not found")),
+        None => Err(ApiError::not_found("Vehicle not found.")),
     }
 }
