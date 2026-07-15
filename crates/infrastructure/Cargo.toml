@@ -7,3 +7,6 @@ edition = "2024"
 application = {path = "../application"}
 domain = {path = "../domain"}
 shared = {path = "../shared"}
+
+[dev-dependencies]
+chrono = "0.4"
