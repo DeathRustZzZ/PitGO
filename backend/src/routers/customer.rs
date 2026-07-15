@@ -3,22 +3,32 @@
 //! This module translates customer API requests into application-layer commands
 //! and returns transport-level responses.
 
+use application::customer::commands::CreateCustomerCommand;
+use application::customer::handlers::{CreateCustomerHandler, GetCustomerHandler};
 use axum::Json;
-use axum::extract::State;
+use axum::extract::{Path, State};
 use axum::http::StatusCode;
-use serde::Deserialize;
+use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::AppState;
 use crate::error::ApiError;
-use application::customer::commands::CreateCustomerCommand;
-use application::customer::handlers::CreateCustomerHandler;
 
 /// Request body for creating a new customer.
 #[derive(Deserialize)]
 pub struct CreateCustomerRequest {
     /// Client-provided customer identifier.
     pub customer_id: Uuid,
+}
+
+/// Response body for a customer.
+#[derive(Serialize)]
+pub struct CustomerResponse {
+    pub customer_id: Uuid,
+    pub status: String,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
 }
 
 /// Handles `POST /customers`.
@@ -42,4 +52,22 @@ pub async fn create_customer(
         StatusCode::CREATED,
         Json("Customer created successfully".to_string()),
     ))
+}
+
+/// Handles `GET /customers/{id}`.
+pub async fn get_customer(
+    State(state): State<AppState>,
+    Path(id): Path<Uuid>,
+) -> Result<Json<CustomerResponse>, ApiError> {
+    let handler = GetCustomerHandler::new(state.customer_repository);
+
+    match handler.handle(id.into())? {
+        Some(customer) => Ok(Json(CustomerResponse {
+            customer_id: customer.id().into(),
+            status: customer.status().kind().to_string(),
+            created_at: customer.created_at(),
+            updated_at: customer.updated_at(),
+        })),
+        None => Err(ApiError::not_found("Customer not found.")),
+    }
 }
