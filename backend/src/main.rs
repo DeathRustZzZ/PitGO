@@ -33,6 +33,7 @@ async fn main() {
     let app = Router::new()
         .route("/health", get(health))
         .route("/customers", post(routers::customer::create_customer))
+        .route("/customers/{id}", get(routers::customer::get_customer))
         .route("/vehicles", post(routers::vehicle::create_vehicle))
         .route(
             "/vehicle_ownerships",
