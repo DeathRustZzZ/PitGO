@@ -37,7 +37,7 @@ async fn main() {
         .route("/vehicles", post(routers::vehicle::create_vehicle))
         .route("/vehicles/{id}", get(routers::vehicle::get_vehicle))
         .route(
-            "/vehicle_ownerships",
+            "/vehicles/{vehicle_id}/ownerships",
             post(routers::vehicle_ownership::create_vehicle_ownership),
         )
         .with_state(state);
