@@ -3,7 +3,7 @@ use crate::error::ApiError;
 use application::ownership::commands::StartVehicleOwnershipCommand;
 use application::ownership::handlers::StartVehicleOwnershipHandler;
 use axum::Json;
-use axum::extract::State;
+use axum::extract::{Path, State};
 use axum::http::StatusCode;
 use domain::vehicle_ownership::OwnershipType;
 use serde::Deserialize;
@@ -12,7 +12,6 @@ use uuid::Uuid;
 #[derive(Deserialize)]
 pub struct CreateVehicleOwnershipRequest {
     pub ownership_id: Uuid,
-    pub vehicle_id: Uuid,
     pub owner_customer_id: Uuid,
     pub ownership_type: OwnershipTypeDto,
 }
@@ -38,13 +37,15 @@ impl OwnershipTypeDto {
     }
 }
 
+/// Handles `POST /vehicles/{vehicle_id}/ownerships`.
 pub async fn create_vehicle_ownership(
     State(state): State<AppState>,
+    Path(vehicle_id): Path<Uuid>,
     Json(body): Json<CreateVehicleOwnershipRequest>,
 ) -> Result<(StatusCode, Json<String>), ApiError> {
     let cmd = StartVehicleOwnershipCommand {
         ownership_id: body.ownership_id.into(),
-        vehicle_id: body.vehicle_id.into(),
+        vehicle_id: vehicle_id.into(),
         owner_customer_id: body.owner_customer_id.into(),
         ownership_type: body.ownership_type.into_domain(),
     };
