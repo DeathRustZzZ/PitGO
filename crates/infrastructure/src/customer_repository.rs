@@ -21,11 +21,26 @@ impl InMemoryCustomerRepository {
 }
 
 impl CustomerRepository for InMemoryCustomerRepository {
+    /// Saves a customer to the repository, checking for version conflicts
     fn save(&self, customer: &Customer) -> Result<(), application::error::RepositoryError> {
         let mut customers = self
             .customers
             .lock()
             .map_err(|e| RepositoryError::StorageFailure(e.to_string()))?;
+
+        let actual = customer.version();
+        let expected = customers
+            .get(&customer.id())
+            .map(|stored| stored.version().next());
+
+        if let Some(expected_version) = expected
+            && expected_version != actual
+        {
+            return Err(RepositoryError::VersionConflict {
+                expected: expected_version.value(),
+                actual: actual.value(),
+            });
+        }
         customers.insert(customer.id(), customer.clone());
 
         Ok(())
