@@ -25,6 +25,19 @@ impl VehicleOwnershipRepository for InMemoryVehicleOwnershipRepository {
             .lock()
             .map_err(|e| RepositoryError::StorageFailure(e.to_string()))?;
 
+        let actual = ownership.version();
+        let expected = ownerships
+            .get(&ownership.id())
+            .map(|stored| stored.version().next());
+
+        if let Some(expected_version) = expected
+            && expected_version != actual
+        {
+            return Err(RepositoryError::VersionConflict {
+                expected: expected_version.value(),
+                actual: actual.value(),
+            });
+        }
         ownerships.insert(ownership.id(), ownership.clone());
         Ok(())
     }
