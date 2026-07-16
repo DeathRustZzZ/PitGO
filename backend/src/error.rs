@@ -10,6 +10,7 @@ use axum::{
     http::StatusCode,
     response::{IntoResponse, Response},
 };
+use domain::vehicle_ownership::OwnershipError;
 use serde::Serialize;
 
 #[derive(Serialize)]
@@ -111,9 +112,20 @@ impl From<ApplicationError> for ApiError {
                     "Internal server error occurred while accessing the repository.",
                 ),
             },
-            ApplicationError::Ownership(_) => ApiError::unprocessable_entity(
-                "Ownership error occurred while processing the request.",
-            ),
+            ApplicationError::Ownership(ownership_error) => match ownership_error {
+                OwnershipError::ActiveOwnershipAlreadyExists => {
+                    ApiError::conflict("Active ownership already exists.")
+                }
+
+                OwnershipError::PeriodEndBeforeStart => ApiError::unprocessable_entity(
+                    "Ownership period end date is before start date.",
+                ),
+
+                OwnershipError::StatusDoesNotAllow(status) => ApiError::conflict(&format!(
+                    "Ownership status '{}' does not allow this operation.",
+                    status
+                )),
+            },
         }
     }
 }
