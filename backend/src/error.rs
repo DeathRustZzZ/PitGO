@@ -114,7 +114,7 @@ impl From<ApplicationError> for ApiError {
             },
             ApplicationError::Ownership(ownership_error) => match ownership_error {
                 OwnershipError::ActiveOwnershipAlreadyExists => {
-                    ApiError::unprocessable_entity("Active ownership already exists.")
+                    ApiError::conflict("Active ownership already exists.")
                 }
 
                 OwnershipError::PeriodEndBeforeStart => ApiError::unprocessable_entity(
