@@ -47,7 +47,7 @@ pub async fn create_customer(
 
     let handler = CreateCustomerHandler::new(repository);
 
-    handler.handle(cmd)?;
+    handler.handle(cmd).await?;
     Ok((
         StatusCode::CREATED,
         Json("Customer created successfully".to_string()),
@@ -61,7 +61,7 @@ pub async fn get_customer(
 ) -> Result<Json<CustomerResponse>, ApiError> {
     let handler = GetCustomerHandler::new(state.customer_repository);
 
-    match handler.handle(id.into())? {
+    match handler.handle(id.into()).await? {
         Some(customer) => Ok(Json(CustomerResponse {
             customer_id: customer.id().into(),
             status: customer.status().kind().to_string(),

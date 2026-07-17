@@ -16,11 +16,11 @@ impl CreateCustomerHandler {
         Self { repository }
     }
 
-    pub fn handle(&self, cmd: CreateCustomerCommand) -> Result<(), ApplicationError> {
+    pub async fn handle(&self, cmd: CreateCustomerCommand) -> Result<(), ApplicationError> {
         let now = Utc::now();
         let customer = Customer::create(cmd.customer_id, now);
 
-        self.repository.save(&customer)?;
+        self.repository.save(&customer).await?;
 
         Ok(())
     }
@@ -36,7 +36,10 @@ impl GetCustomerHandler {
         Self { repository }
     }
 
-    pub fn handle(&self, customer_id: CustomerId) -> Result<Option<Customer>, ApplicationError> {
-        Ok(self.repository.find_by_id(customer_id)?)
+    pub async fn handle(
+        &self,
+        customer_id: CustomerId,
+    ) -> Result<Option<Customer>, ApplicationError> {
+        Ok(self.repository.find_by_id(customer_id).await?)
     }
 }

@@ -1,5 +1,6 @@
 use std::sync::{Arc, Mutex};
 
+use async_trait::async_trait;
 use domain::VehicleId;
 use domain::vehicle::aggregate::Vehicle;
 
@@ -35,8 +36,9 @@ impl MockVehicleRepository {
     }
 }
 
+#[async_trait]
 impl VehicleRepository for MockVehicleRepository {
-    fn save(&self, vehicle: &Vehicle) -> Result<(), RepositoryError> {
+    async fn save(&self, vehicle: &Vehicle) -> Result<(), RepositoryError> {
         if let Some(ref err) = self.save_error {
             return Err(err.clone());
         }
@@ -44,7 +46,7 @@ impl VehicleRepository for MockVehicleRepository {
         Ok(())
     }
 
-    fn find_by_id(&self, _id: VehicleId) -> Result<Option<Vehicle>, RepositoryError> {
+    async fn find_by_id(&self, _id: VehicleId) -> Result<Option<Vehicle>, RepositoryError> {
         Ok(None)
     }
 }
@@ -57,40 +59,43 @@ fn cmd(id: VehicleId) -> CreateVehicleCommand {
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
-#[test]
-fn handle_returns_ok_on_success() {
+#[tokio::test]
+async fn handle_returns_ok_on_success() {
     let repo = MockVehicleRepository::ok();
     let handler = CreateVehicleHandler::new(Arc::clone(&repo) as Arc<dyn VehicleRepository>);
-    assert!(handler.handle(cmd(VehicleId::new())).is_ok());
+    assert!(handler.handle(cmd(VehicleId::new())).await.is_ok());
 }
 
-#[test]
-fn handle_saves_vehicle_with_correct_id() {
+#[tokio::test]
+async fn handle_saves_vehicle_with_correct_id() {
     let repo = MockVehicleRepository::ok();
     let handler = CreateVehicleHandler::new(Arc::clone(&repo) as Arc<dyn VehicleRepository>);
     let id = VehicleId::new();
 
-    handler.handle(cmd(id)).unwrap();
+    handler
+        .handle(cmd(id))
+        .await
+        .expect("vehicle creation should succeed");
 
     assert_eq!(repo.saved_ids(), vec![id]);
 }
 
-#[test]
-fn handle_does_not_save_on_repository_error() {
+#[tokio::test]
+async fn handle_does_not_save_on_repository_error() {
     let repo = MockVehicleRepository::failing(RepositoryError::StorageFailure("io error".into()));
     let handler = CreateVehicleHandler::new(Arc::clone(&repo) as Arc<dyn VehicleRepository>);
 
-    let _ = handler.handle(cmd(VehicleId::new()));
+    let _ = handler.handle(cmd(VehicleId::new())).await;
 
     assert!(repo.saved_ids().is_empty());
 }
 
-#[test]
-fn handle_propagates_storage_failure() {
+#[tokio::test]
+async fn handle_propagates_storage_failure() {
     let repo = MockVehicleRepository::failing(RepositoryError::StorageFailure("disk full".into()));
     let handler = CreateVehicleHandler::new(repo as Arc<dyn VehicleRepository>);
 
-    let err = handler.handle(cmd(VehicleId::new())).unwrap_err();
+    let err = handler.handle(cmd(VehicleId::new())).await.unwrap_err();
 
     assert!(matches!(
         err,
@@ -98,15 +103,15 @@ fn handle_propagates_storage_failure() {
     ));
 }
 
-#[test]
-fn handle_propagates_version_conflict() {
+#[tokio::test]
+async fn handle_propagates_version_conflict() {
     let repo = MockVehicleRepository::failing(RepositoryError::VersionConflict {
         expected: 1,
         actual: 2,
     });
     let handler = CreateVehicleHandler::new(repo as Arc<dyn VehicleRepository>);
 
-    let err = handler.handle(cmd(VehicleId::new())).unwrap_err();
+    let err = handler.handle(cmd(VehicleId::new())).await.unwrap_err();
 
     assert!(matches!(
         err,

@@ -19,8 +19,9 @@ impl InMemoryVehicleRepository {
     }
 }
 
+#[async_trait::async_trait]
 impl VehicleRepository for InMemoryVehicleRepository {
-    fn save(&self, vehicle: &Vehicle) -> Result<(), application::error::RepositoryError> {
+    async fn save(&self, vehicle: &Vehicle) -> Result<(), application::error::RepositoryError> {
         let mut vehicles = self
             .vehicle
             .lock()
@@ -43,7 +44,7 @@ impl VehicleRepository for InMemoryVehicleRepository {
         Ok(())
     }
 
-    fn find_by_id(&self, vehicle_id: VehicleId) -> Result<Option<Vehicle>, RepositoryError> {
+    async fn find_by_id(&self, vehicle_id: VehicleId) -> Result<Option<Vehicle>, RepositoryError> {
         let vehicles = self
             .vehicle
             .lock()

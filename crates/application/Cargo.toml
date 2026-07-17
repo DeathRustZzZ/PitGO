@@ -7,3 +7,7 @@ edition = "2024"
 chrono.workspace = true
 domain = { path = "../domain" }
 thiserror.workspace = true
+async-trait.workspace = true
+
+[dev-dependencies]
+tokio.workspace = true

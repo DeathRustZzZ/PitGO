@@ -45,7 +45,7 @@ pub async fn create_vehicle(
 
     let handler = CreateVehicleHandler::new(repository);
 
-    handler.handle(cmd)?;
+    handler.handle(cmd).await?;
     Ok((
         StatusCode::CREATED,
         Json("Vehicle created successfully".to_string()),
@@ -59,7 +59,7 @@ pub async fn get_vehicle(
 ) -> Result<Json<VehicleResponse>, ApiError> {
     let handler = GetVehicleHandler::new(state.vehicle_repository);
 
-    match handler.handle(id.into())? {
+    match handler.handle(id.into()).await? {
         Some(vehicle) => Ok(Json(VehicleResponse {
             vehicle_id: vehicle.id().into(),
             status: vehicle.status().kind().to_string(),

@@ -5,8 +5,8 @@ mod tests {
     use chrono::Utc;
     use domain::{VehicleId, vehicle::Vehicle};
 
-    #[test]
-    fn rejects_duplicate_vehicle_create() {
+    #[tokio::test]
+    async fn rejects_duplicate_vehicle_create() {
         let repository = InMemoryVehicleRepository::new();
         let vehicle_id = VehicleId::new();
 
@@ -15,9 +15,10 @@ mod tests {
 
         repository
             .save(&first_vehicle)
+            .await
             .expect("First save should succeed");
 
-        let result = repository.save(&duplicate_vehicle);
+        let result = repository.save(&duplicate_vehicle).await;
 
         assert_eq!(
             result,

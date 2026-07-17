@@ -20,9 +20,10 @@ impl InMemoryCustomerRepository {
     }
 }
 
+#[async_trait::async_trait]
 impl CustomerRepository for InMemoryCustomerRepository {
     /// Saves a customer to the repository, checking for version conflicts
-    fn save(&self, customer: &Customer) -> Result<(), application::error::RepositoryError> {
+    async fn save(&self, customer: &Customer) -> Result<(), application::error::RepositoryError> {
         let mut customers = self
             .customers
             .lock()
@@ -46,7 +47,10 @@ impl CustomerRepository for InMemoryCustomerRepository {
         Ok(())
     }
 
-    fn find_by_id(&self, customer_id: CustomerId) -> Result<Option<Customer>, RepositoryError> {
+    async fn find_by_id(
+        &self,
+        customer_id: CustomerId,
+    ) -> Result<Option<Customer>, RepositoryError> {
         let customers = self
             .customers
             .lock()

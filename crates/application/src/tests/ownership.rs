@@ -52,23 +52,27 @@ impl MockOwnershipRepository {
     }
 }
 
+#[async_trait::async_trait]
 impl VehicleOwnershipRepository for MockOwnershipRepository {
-    fn has_active_ownership(&self, _vehicle_id: VehicleId) -> Result<bool, RepositoryError> {
+    async fn has_active_ownership(&self, _vehicle_id: VehicleId) -> Result<bool, RepositoryError> {
         if let Some(ref err) = self.has_active_error {
             return Err(err.clone());
         }
+
         Ok(self.has_active)
     }
 
-    fn save(&self, ownership: &VehicleOwnership) -> Result<(), RepositoryError> {
+    async fn save(&self, ownership: &VehicleOwnership) -> Result<(), RepositoryError> {
         if let Some(ref err) = self.save_error {
             return Err(err.clone());
         }
+
         self.saved_ids.lock().unwrap().push(ownership.id());
+
         Ok(())
     }
 
-    fn find_by_id(
+    async fn find_by_id(
         &self,
         _id: VehicleOwnershipId,
     ) -> Result<Option<VehicleOwnership>, RepositoryError> {
@@ -89,33 +93,38 @@ fn cmd() -> StartVehicleOwnershipCommand {
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
-#[test]
-fn handle_returns_ok_when_no_active_ownership() {
+#[tokio::test]
+async fn handle_returns_ok_when_no_active_ownership() {
     let repo = MockOwnershipRepository::ok(false);
+
     let handler =
         StartVehicleOwnershipHandler::new(Arc::clone(&repo) as Arc<dyn VehicleOwnershipRepository>);
-    assert!(handler.handle(cmd()).is_ok());
+
+    assert!(handler.handle(cmd()).await.is_ok());
 }
 
-#[test]
-fn handle_saves_ownership_with_correct_id() {
+#[tokio::test]
+async fn handle_saves_ownership_with_correct_id() {
     let repo = MockOwnershipRepository::ok(false);
+
     let handler =
         StartVehicleOwnershipHandler::new(Arc::clone(&repo) as Arc<dyn VehicleOwnershipRepository>);
-    let c = cmd();
-    let expected_id = c.ownership_id;
 
-    handler.handle(c).unwrap();
+    let command = cmd();
+    let expected_id = command.ownership_id;
+
+    handler.handle(command).await.unwrap();
 
     assert_eq!(repo.saved_ids(), vec![expected_id]);
 }
 
-#[test]
-fn handle_returns_domain_error_when_active_ownership_exists() {
+#[tokio::test]
+async fn handle_returns_domain_error_when_active_ownership_exists() {
     let repo = MockOwnershipRepository::ok(true);
+
     let handler = StartVehicleOwnershipHandler::new(repo as Arc<dyn VehicleOwnershipRepository>);
 
-    let err = handler.handle(cmd()).unwrap_err();
+    let err = handler.handle(cmd()).await.unwrap_err();
 
     assert!(matches!(
         err,
@@ -123,25 +132,27 @@ fn handle_returns_domain_error_when_active_ownership_exists() {
     ));
 }
 
-#[test]
-fn handle_does_not_save_when_active_ownership_exists() {
+#[tokio::test]
+async fn handle_does_not_save_when_active_ownership_exists() {
     let repo = MockOwnershipRepository::ok(true);
+
     let handler =
         StartVehicleOwnershipHandler::new(Arc::clone(&repo) as Arc<dyn VehicleOwnershipRepository>);
 
-    let _ = handler.handle(cmd());
+    let _ = handler.handle(cmd()).await;
 
     assert!(repo.saved_ids().is_empty());
 }
 
-#[test]
-fn handle_propagates_has_active_ownership_error() {
+#[tokio::test]
+async fn handle_propagates_has_active_ownership_error() {
     let repo = MockOwnershipRepository::failing_on_check(RepositoryError::StorageFailure(
         "connection lost".into(),
     ));
+
     let handler = StartVehicleOwnershipHandler::new(repo as Arc<dyn VehicleOwnershipRepository>);
 
-    let err = handler.handle(cmd()).unwrap_err();
+    let err = handler.handle(cmd()).await.unwrap_err();
 
     assert!(matches!(
         err,
@@ -149,14 +160,15 @@ fn handle_propagates_has_active_ownership_error() {
     ));
 }
 
-#[test]
-fn handle_propagates_save_error() {
+#[tokio::test]
+async fn handle_propagates_save_error() {
     let repo = MockOwnershipRepository::failing_on_save(RepositoryError::StorageFailure(
         "disk full".into(),
     ));
+
     let handler = StartVehicleOwnershipHandler::new(repo as Arc<dyn VehicleOwnershipRepository>);
 
-    let err = handler.handle(cmd()).unwrap_err();
+    let err = handler.handle(cmd()).await.unwrap_err();
 
     assert!(matches!(
         err,
@@ -164,15 +176,16 @@ fn handle_propagates_save_error() {
     ));
 }
 
-#[test]
-fn handle_does_not_save_on_save_error() {
+#[tokio::test]
+async fn handle_does_not_save_on_save_error() {
     let repo = MockOwnershipRepository::failing_on_save(RepositoryError::StorageFailure(
         "disk full".into(),
     ));
+
     let handler =
         StartVehicleOwnershipHandler::new(Arc::clone(&repo) as Arc<dyn VehicleOwnershipRepository>);
 
-    let _ = handler.handle(cmd());
+    let _ = handler.handle(cmd()).await;
 
     assert!(repo.saved_ids().is_empty());
 }

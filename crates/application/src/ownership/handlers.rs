@@ -17,9 +17,9 @@ impl StartVehicleOwnershipHandler {
         Self { repository }
     }
     /// Handles the StartVehicleOwnershipCommand
-    pub fn handle(&self, cmd: StartVehicleOwnershipCommand) -> Result<(), ApplicationError> {
+    pub async fn handle(&self, cmd: StartVehicleOwnershipCommand) -> Result<(), ApplicationError> {
         let now = Utc::now();
-        let has_active_ownership = self.repository.has_active_ownership(cmd.vehicle_id)?;
+        let has_active_ownership = self.repository.has_active_ownership(cmd.vehicle_id).await?;
         let snapshot = OwnershipEligibilitySnapshot::new(cmd.vehicle_id, has_active_ownership);
         let ownership = VehicleOwnership::start(
             cmd.ownership_id,
@@ -30,7 +30,7 @@ impl StartVehicleOwnershipHandler {
             now,
         )?;
 
-        self.repository.save(&ownership)?;
+        self.repository.save(&ownership).await?;
 
         Ok(())
     }

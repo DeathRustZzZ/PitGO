@@ -54,7 +54,7 @@ pub async fn create_vehicle_ownership(
 
     let handler = StartVehicleOwnershipHandler::new(repository);
 
-    handler.handle(cmd)?;
+    handler.handle(cmd).await?;
     Ok((
         StatusCode::CREATED,
         Json("Vehicle ownership started successfully".to_string()),

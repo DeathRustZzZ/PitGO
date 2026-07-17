@@ -19,10 +19,10 @@ impl CreateVehicleHandler {
     }
 
     /// Handle the command to create a new vehicle
-    pub fn handle(&self, cmd: CreateVehicleCommand) -> Result<(), ApplicationError> {
+    pub async fn handle(&self, cmd: CreateVehicleCommand) -> Result<(), ApplicationError> {
         let now = Utc::now();
         let vehicle = Vehicle::create(cmd.vehicle_id, now);
-        self.repository.save(&vehicle)?;
+        self.repository.save(&vehicle).await?;
         Ok(())
     }
 }
@@ -37,7 +37,7 @@ impl GetVehicleHandler {
         Self { repository }
     }
 
-    pub fn handle(&self, vehicle_id: VehicleId) -> Result<Option<Vehicle>, ApplicationError> {
-        Ok(self.repository.find_by_id(vehicle_id)?)
+    pub async fn handle(&self, vehicle_id: VehicleId) -> Result<Option<Vehicle>, ApplicationError> {
+        Ok(self.repository.find_by_id(vehicle_id).await?)
     }
 }

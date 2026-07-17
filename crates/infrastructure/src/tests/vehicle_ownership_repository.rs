@@ -9,8 +9,8 @@ mod tests {
     };
     use domain::{CustomerId, VehicleId, VehicleOwnershipId};
 
-    #[test]
-    fn rejects_duplicate_vehicle_ownership_start() {
+    #[tokio::test]
+    async fn rejects_duplicate_vehicle_ownership_start() {
         // Arrange
         let repository = InMemoryVehicleOwnershipRepository::new();
 
@@ -41,10 +41,11 @@ mod tests {
 
         repository
             .save(&first_ownership)
+            .await
             .expect("first save should succeed");
 
         // Act
-        let result = repository.save(&duplicate_ownership);
+        let result = repository.save(&duplicate_ownership).await;
 
         // Assert
         assert_eq!(
