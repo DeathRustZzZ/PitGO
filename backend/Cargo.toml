@@ -10,6 +10,7 @@ infrastructure = { path = "../crates/infrastructure"}
 domain = { path = "../crates/domain" }
 
 # External dependencies
+tower-http = { workspace = true }
 axum = { workspace = true }
 chrono = { workspace = true }
 tokio = { workspace = true }

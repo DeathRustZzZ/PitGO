@@ -4,6 +4,7 @@ use application::{
 };
 use axum::{
     Router,
+    http::{HeaderValue, Method, header::CONTENT_TYPE},
     routing::{get, post},
 };
 use infrastructure::customer_repository::InMemoryCustomerRepository;
@@ -12,6 +13,7 @@ use infrastructure::vehicle_repository::InMemoryVehicleRepository;
 mod error;
 mod routers;
 use std::{net::SocketAddr, sync::Arc};
+use tower_http::cors::CorsLayer;
 
 #[derive(Clone)]
 struct AppState {
@@ -23,6 +25,12 @@ struct AppState {
 #[tokio::main]
 async fn main() {
     tracing_subscriber::fmt::init();
+
+    let cors = CorsLayer::new()
+        .allow_origin(HeaderValue::from_static("http://localhost:5173"))
+        .allow_credentials(true)
+        .allow_headers([CONTENT_TYPE])
+        .allow_methods([Method::GET, Method::POST]);
 
     let state = AppState {
         customer_repository: Arc::new(InMemoryCustomerRepository::new()),
@@ -40,6 +48,7 @@ async fn main() {
             "/vehicles/{vehicle_id}/ownerships",
             post(routers::vehicle_ownership::create_vehicle_ownership),
         )
+        .layer(cors)
         .with_state(state);
 
     let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
