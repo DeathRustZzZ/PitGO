@@ -85,7 +85,7 @@ async fn handle_does_not_save_on_repository_error() {
     let repo = MockVehicleRepository::failing(RepositoryError::StorageFailure("io error".into()));
     let handler = CreateVehicleHandler::new(Arc::clone(&repo) as Arc<dyn VehicleRepository>);
 
-    let _ = handler.handle(cmd(VehicleId::new()));
+    let _ = handler.handle(cmd(VehicleId::new())).await;
 
     assert!(repo.saved_ids().is_empty());
 }
