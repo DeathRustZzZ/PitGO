@@ -5,8 +5,8 @@ mod tests {
     use chrono::Utc;
     use domain::{CustomerId, customer::Customer};
 
-    #[test]
-    fn rejects_duplicate_customer_create() {
+    #[tokio::test]
+    async fn rejects_duplicate_customer_create() {
         let repository = InMemoryCustomerRepository::new();
         let customer_id = CustomerId::new();
 
@@ -15,10 +15,9 @@ mod tests {
 
         repository
             .save(&first_customer)
+            .await
             .expect("First save should succeed");
-
-        let result = repository.save(&duplicate_customer);
-
+        let result = repository.save(&duplicate_customer).await;
         assert_eq!(
             result,
             Err(RepositoryError::VersionConflict {
