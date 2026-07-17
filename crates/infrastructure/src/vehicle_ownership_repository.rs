@@ -18,8 +18,9 @@ impl InMemoryVehicleOwnershipRepository {
     }
 }
 
+#[async_trait::async_trait]
 impl VehicleOwnershipRepository for InMemoryVehicleOwnershipRepository {
-    fn save(&self, ownership: &VehicleOwnership) -> Result<(), RepositoryError> {
+    async fn save(&self, ownership: &VehicleOwnership) -> Result<(), RepositoryError> {
         let mut ownerships = self
             .vehicle_ownership
             .lock()
@@ -44,7 +45,7 @@ impl VehicleOwnershipRepository for InMemoryVehicleOwnershipRepository {
 
     /// Finds a vehicle ownership by its ID.
     /// Returns `Ok(Some(VehicleOwnership))` if found, `Ok(None)` if not found, or an error if there was a storage failure.
-    fn find_by_id(
+    async fn find_by_id(
         &self,
         ownership_id: VehicleOwnershipId,
     ) -> Result<Option<VehicleOwnership>, RepositoryError> {
@@ -57,7 +58,10 @@ impl VehicleOwnershipRepository for InMemoryVehicleOwnershipRepository {
 
     /// Checks if there is an active ownership for the given vehicle ID.
     /// Returns `true` if an active ownership exists, otherwise returns `false`.
-    fn has_active_ownership(&self, vehicle_id: domain::VehicleId) -> Result<bool, RepositoryError> {
+    async fn has_active_ownership(
+        &self,
+        vehicle_id: domain::VehicleId,
+    ) -> Result<bool, RepositoryError> {
         let ownerships = self
             .vehicle_ownership
             .lock()
