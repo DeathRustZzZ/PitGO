@@ -93,3 +93,15 @@ impl OwnershipPeriod {
         })
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::OwnershipStatus;
+
+    #[test]
+    fn pending_and_active_ownerships_are_open() {
+        assert!(OwnershipStatus::PendingVerification.is_open());
+        assert!(OwnershipStatus::Active.is_open());
+        assert!(!OwnershipStatus::Ended.is_open());
+    }
+}
