@@ -99,7 +99,7 @@ mod tests {
     use super::OwnershipStatus;
 
     #[test]
-    fn pending_and_active_ownerships_are_open() {
+    fn open_statuses_are_classified_correctly() {
         assert!(OwnershipStatus::PendingVerification.is_open());
         assert!(OwnershipStatus::Active.is_open());
         assert!(!OwnershipStatus::Ended.is_open());
