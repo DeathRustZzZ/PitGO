@@ -24,7 +24,7 @@ pub enum OwnershipStatusKind {
 
 impl OwnershipStatus {
     /// Возвращает `true` если статус открытый (не завершённый).
-    pub fn is_open(self) -> bool {
+    pub fn is_open(&self) -> bool {
         match self {
             Self::PendingVerification | Self::Active => true,
             Self::Ended => false,
@@ -78,6 +78,7 @@ impl OwnershipPeriod {
         }
     }
 
+    /// Возвращает `true`, если период открыт (не завершён).
     pub fn is_open(&self) -> bool {
         self.ended_at.is_none()
     }
@@ -99,6 +100,7 @@ mod tests {
     use super::OwnershipStatus;
 
     #[test]
+    // Проверяет, что открытые статусы классифицируются корректно.
     fn open_statuses_are_classified_correctly() {
         assert!(OwnershipStatus::PendingVerification.is_open());
         assert!(OwnershipStatus::Active.is_open());

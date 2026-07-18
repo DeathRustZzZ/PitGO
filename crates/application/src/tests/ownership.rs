@@ -54,7 +54,7 @@ impl MockOwnershipRepository {
 
 #[async_trait::async_trait]
 impl VehicleOwnershipRepository for MockOwnershipRepository {
-    async fn has_active_ownership(&self, _vehicle_id: VehicleId) -> Result<bool, RepositoryError> {
+    async fn has_open_ownership(&self, _vehicle_id: VehicleId) -> Result<bool, RepositoryError> {
         if let Some(ref err) = self.has_active_error {
             return Err(err.clone());
         }

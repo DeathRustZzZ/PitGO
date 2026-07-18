@@ -5,7 +5,7 @@ use domain::{VehicleId, VehicleOwnershipId};
 #[async_trait::async_trait]
 pub trait VehicleOwnershipRepository: Send + Sync {
     /// Checks if there is an active ownership for the given vehicle ID
-    async fn has_active_ownership(&self, vehicle_id: VehicleId) -> Result<bool, RepositoryError>;
+    async fn has_open_ownership(&self, vehicle_id: VehicleId) -> Result<bool, RepositoryError>;
 
     /// Saves the given VehicleOwnership entity to the repository
     async fn save(&self, ownership: &VehicleOwnership) -> Result<(), RepositoryError>;

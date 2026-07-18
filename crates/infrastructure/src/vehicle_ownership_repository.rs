@@ -58,7 +58,7 @@ impl VehicleOwnershipRepository for InMemoryVehicleOwnershipRepository {
 
     /// Checks if there is an active ownership for the given vehicle ID.
     /// Returns `true` if an active ownership exists, otherwise returns `false`.
-    async fn has_active_ownership(
+    async fn has_open_ownership(
         &self,
         vehicle_id: domain::VehicleId,
     ) -> Result<bool, RepositoryError> {
