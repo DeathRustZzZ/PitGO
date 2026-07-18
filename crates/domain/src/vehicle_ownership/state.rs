@@ -23,6 +23,14 @@ pub enum OwnershipStatusKind {
 }
 
 impl OwnershipStatus {
+    /// Возвращает `true` если статус открытый (не завершённый).
+    pub fn is_open(self) -> bool {
+        match self {
+            Self::PendingVerification | Self::Active => true,
+            Self::Ended => false,
+        }
+    }
+
     pub fn kind(&self) -> OwnershipStatusKind {
         match self {
             Self::PendingVerification => OwnershipStatusKind::PendingVerification,
