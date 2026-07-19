@@ -131,6 +131,7 @@ flowchart LR
 | POST | `/vehicles` | `create_vehicle` | `CreateVehicleHandler` |
 | GET | `/vehicles/{id}` | `get_vehicle` | `GetVehicleHandler` |
 | POST | `/vehicles/{vehicle_id}/ownerships` | `create_vehicle_ownership` | `StartVehicleOwnershipHandler` |
+| GET | `/vehicles/{vehicle_id}/ownerships/{ownership_id}` | `get_vehicle_ownership` | `GetVehicleOwnershipHandler` |
 
 ## Внешние системы
 

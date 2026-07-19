@@ -186,3 +186,11 @@ async fn vehicle_not_found_maps_to_404() {
     assert_eq!(status, StatusCode::NOT_FOUND);
     assert_eq!(body.error, "vehicle_not_found");
 }
+
+#[tokio::test]
+async fn ownership_not_found_maps_to_404() {
+    let (status, body) = decode(ApiError::ownership_not_found()).await;
+
+    assert_eq!(status, StatusCode::NOT_FOUND);
+    assert_eq!(body.error, "ownership_not_found");
+}

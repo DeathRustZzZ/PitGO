@@ -2,12 +2,13 @@ use std::sync::{Arc, Mutex};
 
 use domain::vehicle_ownership::aggregate::VehicleOwnership;
 use domain::vehicle_ownership::error::OwnershipError;
+use domain::vehicle_ownership::snapshot::OwnershipEligibilitySnapshot;
 use domain::vehicle_ownership::state::OwnershipType;
 use domain::{CustomerId, VehicleId, VehicleOwnershipId};
 
 use crate::error::{ApplicationError, RepositoryError};
 use crate::ownership::commands::StartVehicleOwnershipCommand;
-use crate::ownership::handlers::StartVehicleOwnershipHandler;
+use crate::ownership::handlers::{GetVehicleOwnershipHandler, StartVehicleOwnershipHandler};
 use crate::ownership::ports::VehicleOwnershipRepository;
 
 // ── Mock ──────────────────────────────────────────────────────────────────────
@@ -16,6 +17,7 @@ struct MockOwnershipRepository {
     has_open: bool,
     has_open_error: Option<RepositoryError>,
     save_error: Option<RepositoryError>,
+    find_result: Result<Option<VehicleOwnership>, RepositoryError>,
     saved_ids: Mutex<Vec<VehicleOwnershipId>>,
 }
 
@@ -25,6 +27,7 @@ impl MockOwnershipRepository {
             has_open,
             has_open_error: None,
             save_error: None,
+            find_result: Ok(None),
             saved_ids: Mutex::new(vec![]),
         })
     }
@@ -34,6 +37,7 @@ impl MockOwnershipRepository {
             has_open: false,
             has_open_error: Some(error),
             save_error: None,
+            find_result: Ok(None),
             saved_ids: Mutex::new(vec![]),
         })
     }
@@ -43,6 +47,17 @@ impl MockOwnershipRepository {
             has_open: false,
             has_open_error: None,
             save_error: Some(error),
+            find_result: Ok(None),
+            saved_ids: Mutex::new(vec![]),
+        })
+    }
+
+    fn with_find_result(result: Result<Option<VehicleOwnership>, RepositoryError>) -> Arc<Self> {
+        Arc::new(Self {
+            has_open: false,
+            has_open_error: None,
+            save_error: None,
+            find_result: result,
             saved_ids: Mutex::new(vec![]),
         })
     }
@@ -76,7 +91,7 @@ impl VehicleOwnershipRepository for MockOwnershipRepository {
         &self,
         _id: VehicleOwnershipId,
     ) -> Result<Option<VehicleOwnership>, RepositoryError> {
-        Ok(None)
+        self.find_result.clone()
     }
 }
 
@@ -89,6 +104,19 @@ fn cmd() -> StartVehicleOwnershipCommand {
         owner_customer_id: CustomerId::new(),
         ownership_type: OwnershipType::Private,
     }
+}
+
+fn ownership() -> VehicleOwnership {
+    let vehicle_id = VehicleId::new();
+    VehicleOwnership::start(
+        VehicleOwnershipId::new(),
+        vehicle_id,
+        CustomerId::new(),
+        OwnershipType::Private,
+        OwnershipEligibilitySnapshot::new(vehicle_id, false),
+        chrono::Utc::now(),
+    )
+    .expect("test ownership should be valid")
 }
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
@@ -188,4 +216,51 @@ async fn handle_does_not_save_on_save_error() {
     let _ = handler.handle(cmd()).await;
 
     assert!(repo.saved_ids().is_empty());
+}
+
+#[tokio::test]
+async fn get_handle_returns_found_ownership() {
+    let expected = ownership();
+    let expected_id = expected.id();
+    let repo = MockOwnershipRepository::with_find_result(Ok(Some(expected)));
+    let handler = GetVehicleOwnershipHandler::new(repo as Arc<dyn VehicleOwnershipRepository>);
+
+    let result = handler
+        .handle(expected_id)
+        .await
+        .expect("lookup should succeed");
+
+    assert_eq!(result.map(|ownership| ownership.id()), Some(expected_id));
+}
+
+#[tokio::test]
+async fn get_handle_returns_none_when_ownership_is_missing() {
+    let repo = MockOwnershipRepository::with_find_result(Ok(None));
+    let handler = GetVehicleOwnershipHandler::new(repo as Arc<dyn VehicleOwnershipRepository>);
+
+    assert!(
+        handler
+            .handle(VehicleOwnershipId::new())
+            .await
+            .expect("lookup should succeed")
+            .is_none()
+    );
+}
+
+#[tokio::test]
+async fn get_handle_propagates_repository_error() {
+    let repo = MockOwnershipRepository::with_find_result(Err(RepositoryError::StorageFailure(
+        "connection lost".into(),
+    )));
+    let handler = GetVehicleOwnershipHandler::new(repo as Arc<dyn VehicleOwnershipRepository>);
+
+    let err = handler
+        .handle(VehicleOwnershipId::new())
+        .await
+        .expect_err("repository error should propagate");
+
+    assert!(matches!(
+        err,
+        ApplicationError::Repository(RepositoryError::StorageFailure(_))
+    ));
 }

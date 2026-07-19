@@ -126,6 +126,10 @@ async fn main() {
             "/vehicles/{vehicle_id}/ownerships",
             post(routers::vehicle_ownership::create_vehicle_ownership),
         )
+        .route(
+            "/vehicles/{vehicle_id}/ownerships/{ownership_id}",
+            get(routers::vehicle_ownership::get_vehicle_ownership),
+        )
         .layer(cors)
         .with_state(state);
 

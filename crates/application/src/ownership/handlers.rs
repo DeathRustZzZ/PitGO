@@ -6,6 +6,7 @@ use crate::error::ApplicationError;
 use crate::ownership::commands::StartVehicleOwnershipCommand;
 use crate::ownership::ports::VehicleOwnershipRepository;
 use chrono::Utc;
+use domain::VehicleOwnershipId;
 use domain::vehicle_ownership::aggregate::VehicleOwnership;
 use domain::vehicle_ownership::snapshot::OwnershipEligibilitySnapshot;
 use std::sync::Arc;
@@ -96,5 +97,36 @@ impl StartVehicleOwnershipHandler {
         self.repository.save(&ownership).await?;
 
         Ok(())
+    }
+}
+
+/// Handler for the "fetch a vehicle ownership by id" use case.
+///
+/// Обработчик сценария «получить владение автомобилем по идентификатору».
+pub struct GetVehicleOwnershipHandler {
+    repository: Arc<dyn VehicleOwnershipRepository>,
+}
+
+impl GetVehicleOwnershipHandler {
+    /// Builds the handler around a repository adapter.
+    ///
+    /// Создаёт обработчик поверх адаптера репозитория.
+    #[must_use]
+    pub fn new(repository: Arc<dyn VehicleOwnershipRepository>) -> Self {
+        Self { repository }
+    }
+
+    /// Returns the ownership record, or `None` when it does not exist.
+    ///
+    /// The handler delegates directly to the port: translating absence into
+    /// HTTP 404 belongs to the transport layer, not the application layer.
+    ///
+    /// Обработчик напрямую делегирует порту: преобразование отсутствия в HTTP
+    /// 404 относится к транспортному, а не application-слою.
+    pub async fn handle(
+        &self,
+        ownership_id: VehicleOwnershipId,
+    ) -> Result<Option<VehicleOwnership>, ApplicationError> {
+        Ok(self.repository.find_by_id(ownership_id).await?)
     }
 }

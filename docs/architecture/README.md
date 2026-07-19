@@ -19,8 +19,8 @@
 
 ## Состояние на момент составления
 
-- База: `main` после PR #10 (`feat/semantic-error-codes`)
-- Тестов: **89** — domain 50, application 17, infrastructure 13, backend 9
+- База: рабочее дерево после задач 001–004 Фазы 1
+- Тестов: **93** — domain 50, application 20, infrastructure 13, backend 10
 - Все репозитории — in-memory; PostgreSQL не реализован
 - Фронтенд работает на моках и **не обращается** к Rust-бэкенду
 

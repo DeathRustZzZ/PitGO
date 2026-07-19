@@ -22,6 +22,7 @@
 //! | `OwnershipError::PeriodEndBeforeStart`             | 422         | `ownership_period_invalid`          |
 //! | not found (customer, from routers/customer.rs)    | 404         | `customer_not_found`                |
 //! | not found (vehicle, from routers/vehicle.rs)       | 404         | `vehicle_not_found`                 |
+//! | not found (ownership, from routers/vehicle_ownership.rs) | 404   | `ownership_not_found`               |
 //!
 //! HTTP-представление ошибок API бэкенда.
 //!
@@ -41,6 +42,7 @@
 //! | `OwnershipError::PeriodEndBeforeStart`               | 422         | `ownership_period_invalid`           |
 //! | not found (клиент, из routers/customer.rs)          | 404         | `customer_not_found`                 |
 //! | not found (автомобиль, из routers/vehicle.rs)        | 404         | `vehicle_not_found`                  |
+//! | not found (владение, из routers/vehicle_ownership.rs) | 404         | `ownership_not_found`                |
 //!
 //! Это разделение является не столько архитектурной, сколько защитной границей.
 //! Ошибка приложения может нести сообщение драйвера, фрагмент строки
@@ -248,6 +250,25 @@ impl ApiError {
             body: ErrorBody {
                 error: "vehicle_not_found".to_string(),
                 message: "Vehicle not found.".to_string(),
+            },
+        }
+    }
+
+    /// Creates the `404 Not Found` / `ownership_not_found` response.
+    ///
+    /// Used both when an ownership id is absent and when it belongs to a
+    /// different vehicle than the one named in the nested URL. Returning the
+    /// same response avoids disclosing records outside that vehicle scope.
+    ///
+    /// Используется и когда идентификатор владения отсутствует, и когда он
+    /// принадлежит автомобилю, отличному от указанного во вложенном URL. Один
+    /// и тот же ответ не раскрывает записи за пределами автомобиля из URL.
+    pub fn ownership_not_found() -> Self {
+        Self {
+            status: StatusCode::NOT_FOUND,
+            body: ErrorBody {
+                error: "ownership_not_found".to_string(),
+                message: "Vehicle ownership not found.".to_string(),
             },
         }
     }

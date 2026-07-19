@@ -72,6 +72,7 @@ flowchart TD
 | `vehicle/handlers.rs` | `save` / `find_by_id` `.await` | нет |
 | `ownership/handlers.rs` | `has_open_ownership(...).await` | нет |
 | `ownership/handlers.rs` | `save(...).await` | нет |
+| `ownership/handlers.rs` | `find_by_id(...).await` | нет |
 
 **Важное следствие.** Кроме двух вызовов в `main.rs`, ни один `await` в системе
 не приводит к настоящей приостановке. За портом стоит `HashMap`, future

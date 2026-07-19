@@ -69,6 +69,7 @@ flowchart TD
     R2["Vehicle::create"]
     R3["VehicleOwnership::start"]
     R4["find_by_id — customer, vehicle"]
+    R5["VehicleOwnershipRepository::find_by_id"]
   end
 
   subgraph unreachable["Реализовано, но недостижимо"]
@@ -76,14 +77,13 @@ flowchart TD
     U2["Vehicle::activate"]
     U3["VehicleOwnership::verify"]
     U4["VehicleOwnership::end"]
-    U5["VehicleOwnershipRepository::find_by_id"]
   end
 
   classDef missing stroke-dasharray: 5 5
-  class U1,U2,U3,U4,U5 missing
+  class U1,U2,U3,U4 missing
 ```
 
-Для каждого из пяти пунктов справа отсутствует обработчик приложения, команда
+Для каждого из четырёх пунктов справа отсутствует обработчик приложения, команда
 и маршрут. Проверено grep'ом: `activate(` не встречается вне `crates/domain`,
 `.verify(`/`.end(` — только в тестах инфраструктуры.
 

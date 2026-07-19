@@ -8,8 +8,9 @@
 
 ## Что представлено
 
-Маршрут `POST /vehicles/{vehicle_id}/ownerships`, обработчик, порт с тремя
-методами, адаптер, агрегат и полная машина состояний.
+Маршруты `POST /vehicles/{vehicle_id}/ownerships` и
+`GET /vehicles/{vehicle_id}/ownerships/{ownership_id}`, обработчики, порт с
+тремя методами, адаптер, агрегат и полная машина состояний.
 
 ## Как читать
 
@@ -23,11 +24,13 @@
 flowchart TD
 
   R["POST /vehicles/{vehicle_id}/ownerships"]
+  GR["GET /vehicles/{vehicle_id}/ownerships/{ownership_id}"]
   DTO["CreateVehicleOwnershipRequest<br/>ownership_id, owner_customer_id, ownership_type"]
   TDTO["OwnershipTypeDto<br/>serde snake_case"]
   CMD["StartVehicleOwnershipCommand<br/>4 поля"]
 
   H["StartVehicleOwnershipHandler"]
+  GH["GetVehicleOwnershipHandler"]
 
   PORT["trait VehicleOwnershipRepository"]
   M1["has_open_ownership(vehicle_id)"]
@@ -64,13 +67,62 @@ flowchart TD
   H -->|"4 - await"| M2
   M2 --> PORT
 
-  M3 -.->|"порт объявлен,<br/>ни один обработчик не вызывает"| PORT
+  GR --> GH
+  GH -->|"await"| M3
+  M3 --> PORT
 
   ERR --> APIERR
 
-  classDef unused stroke-dasharray: 5 5
-  class M3 unused
 ```
+
+## Read endpoint / Endpoint чтения
+
+### English
+
+`GET /vehicles/{vehicle_id}/ownerships/{ownership_id}` returns a single
+ownership record. The application handler only loads the aggregate by
+`ownership_id`; the HTTP router owns the nested-URL check and the response DTO.
+This keeps transport concerns out of the application and domain layers.
+
+The response uses stable `snake_case` strings for both enums. An open period
+has `"ended_at": null` rather than omitting the field.
+
+| Field | JSON type / example |
+|---|---|
+| `ownership_id`, `vehicle_id`, `owner_customer_id` | UUID string |
+| `ownership_type` | `private`, `company`, `leasing`, `fleet`, `unknown` |
+| `status` | `pending_verification`, `active`, `ended` |
+| `started_at`, `created_at`, `updated_at` | UTC RFC 3339 timestamp |
+| `ended_at` | UTC RFC 3339 timestamp or `null` |
+
+If the ownership is missing, or it belongs to a vehicle other than the one in
+the URL, the API returns the identical response: `404` with
+`error: "ownership_not_found"`. Treating both cases equally means the nested
+resource does not exist at that URL and avoids disclosing ownerships of another
+vehicle.
+
+### Русский
+
+`GET /vehicles/{vehicle_id}/ownerships/{ownership_id}` возвращает одну запись
+о владении. Application-хендлер только загружает агрегат по `ownership_id`; за
+проверку вложенного URL и DTO ответа отвечает HTTP-роутер. Поэтому
+транспортные детали не проникают в application- и domain-слои.
+
+Оба enum-поля в ответе имеют стабильные `snake_case`-строки. У открытого
+периода поле `"ended_at"` равно `null`, а не отсутствует в JSON.
+
+| Поле | Тип JSON / пример |
+|---|---|
+| `ownership_id`, `vehicle_id`, `owner_customer_id` | строка UUID |
+| `ownership_type` | `private`, `company`, `leasing`, `fleet`, `unknown` |
+| `status` | `pending_verification`, `active`, `ended` |
+| `started_at`, `created_at`, `updated_at` | UTC-временная метка RFC 3339 |
+| `ended_at` | UTC-временная метка RFC 3339 или `null` |
+
+Если владение отсутствует либо принадлежит автомобилю, отличному от указанного
+в URL, API возвращает один и тот же ответ: `404` с
+`error: "ownership_not_found"`. Вложенного ресурса по этому URL нет, а единый
+ответ не раскрывает владения другого автомобиля.
 
 ## Машина состояний
 
@@ -146,7 +198,7 @@ flowchart LR
 | `VehicleOwnership::end` | **нет** — вызывается только из тестов |
 | `has_open_ownership` | да, косвенно через `start` |
 | `save` | да |
-| `find_by_id` | **нет** — обработчика чтения владения не существует |
+| `find_by_id` | да, через `GetVehicleOwnershipHandler` |
 
-Через API владение можно только **создать**. Подтвердить, завершить или
-прочитать его нельзя: соответствующих обработчиков и маршрутов в коде нет.
+Через API владение можно **создать и прочитать**. Подтвердить или завершить его
+пока нельзя: соответствующих обработчиков и маршрутов в коде нет.
