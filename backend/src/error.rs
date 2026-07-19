@@ -196,9 +196,22 @@ impl From<ApplicationError> for ApiError {
     fn from(e: ApplicationError) -> Self {
         match e {
             ApplicationError::Repository(repo_err) => match repo_err {
+                // The underlying message is dropped deliberately: it can name
+                // internal storage details that must not reach an API client.
+                //
+                // Исходное сообщение намеренно отбрасывается: оно может
+                // раскрывать внутренние детали хранилища, которые не должны дойти до клиента API.
                 RepositoryError::VersionConflict { .. } => {
                     ApiError::conflict("Conflict occurred while processing the request.")
                 }
+
+                // The underlying message is dropped deliberately: it can name
+                // internal storage details that must not reach an API client.
+                //
+                // Исходное сообщение намеренно отбрасывается: оно может
+                // раскрывать внутренние детали хранилища, которые не должны дойти до клиента API.
+                RepositoryError::AlreadyExists => ApiError::conflict("Aggregate already exists."),
+
                 // The underlying message is dropped deliberately: it can name
                 // internal storage details that must not reach an API client.
                 //
