@@ -38,6 +38,7 @@
 //! - [`vehicle_ownership`] — операционное владение, связывающее клиента и автомобиль.
 
 pub mod customer;
+pub mod customer_contact_book;
 pub mod ids;
 pub mod vehicle;
 pub mod vehicle_ownership;

@@ -217,5 +217,5 @@ impl Customer {
 }
 
 #[cfg(test)]
-#[path = "aggregate_tests.rs"]
+#[path = "tests/aggregate_tests.rs"]
 mod aggregate_tests;

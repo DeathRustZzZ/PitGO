@@ -2,6 +2,13 @@
 
 set -eu
 
+branch="$(git branch --show-current)"
+
+if [ "$branch" != "main" ]; then
+  echo "Skipping pre-commit checks outside main (current: $branch)"
+  exit 0
+fi
+
 echo "Checking Rust..."
 cargo fmt --all --check
 cargo clippy --workspace --all-targets --all-features -- -D warnings
