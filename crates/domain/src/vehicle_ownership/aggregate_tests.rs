@@ -80,7 +80,7 @@ fn start_sets_version_to_one() {
 }
 
 #[test]
-fn start_with_active_ownership_returns_error() {
+fn start_with_open_ownership_returns_error() {
     let vehicle_id = VehicleId::new();
     let err = VehicleOwnership::start(
         VehicleOwnershipId::new(),

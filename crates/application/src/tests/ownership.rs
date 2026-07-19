@@ -13,17 +13,17 @@ use crate::ownership::ports::VehicleOwnershipRepository;
 // ── Mock ──────────────────────────────────────────────────────────────────────
 
 struct MockOwnershipRepository {
-    has_active: bool,
-    has_active_error: Option<RepositoryError>,
+    has_open: bool,
+    has_open_error: Option<RepositoryError>,
     save_error: Option<RepositoryError>,
     saved_ids: Mutex<Vec<VehicleOwnershipId>>,
 }
 
 impl MockOwnershipRepository {
-    fn ok(has_active: bool) -> Arc<Self> {
+    fn ok(has_open: bool) -> Arc<Self> {
         Arc::new(Self {
-            has_active,
-            has_active_error: None,
+            has_open,
+            has_open_error: None,
             save_error: None,
             saved_ids: Mutex::new(vec![]),
         })
@@ -31,8 +31,8 @@ impl MockOwnershipRepository {
 
     fn failing_on_check(error: RepositoryError) -> Arc<Self> {
         Arc::new(Self {
-            has_active: false,
-            has_active_error: Some(error),
+            has_open: false,
+            has_open_error: Some(error),
             save_error: None,
             saved_ids: Mutex::new(vec![]),
         })
@@ -40,8 +40,8 @@ impl MockOwnershipRepository {
 
     fn failing_on_save(error: RepositoryError) -> Arc<Self> {
         Arc::new(Self {
-            has_active: false,
-            has_active_error: None,
+            has_open: false,
+            has_open_error: None,
             save_error: Some(error),
             saved_ids: Mutex::new(vec![]),
         })
@@ -55,11 +55,11 @@ impl MockOwnershipRepository {
 #[async_trait::async_trait]
 impl VehicleOwnershipRepository for MockOwnershipRepository {
     async fn has_open_ownership(&self, _vehicle_id: VehicleId) -> Result<bool, RepositoryError> {
-        if let Some(ref err) = self.has_active_error {
+        if let Some(ref err) = self.has_open_error {
             return Err(err.clone());
         }
 
-        Ok(self.has_active)
+        Ok(self.has_open)
     }
 
     async fn save(&self, ownership: &VehicleOwnership) -> Result<(), RepositoryError> {
@@ -94,7 +94,7 @@ fn cmd() -> StartVehicleOwnershipCommand {
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
 #[tokio::test]
-async fn handle_returns_ok_when_no_active_ownership() {
+async fn handle_returns_ok_when_no_open_ownership() {
     let repo = MockOwnershipRepository::ok(false);
 
     let handler =
@@ -119,7 +119,7 @@ async fn handle_saves_ownership_with_correct_id() {
 }
 
 #[tokio::test]
-async fn handle_returns_domain_error_when_active_ownership_exists() {
+async fn handle_returns_domain_error_when_open_ownership_exists() {
     let repo = MockOwnershipRepository::ok(true);
 
     let handler = StartVehicleOwnershipHandler::new(repo as Arc<dyn VehicleOwnershipRepository>);
@@ -133,7 +133,7 @@ async fn handle_returns_domain_error_when_active_ownership_exists() {
 }
 
 #[tokio::test]
-async fn handle_does_not_save_when_active_ownership_exists() {
+async fn handle_does_not_save_when_open_ownership_exists() {
     let repo = MockOwnershipRepository::ok(true);
 
     let handler =
@@ -145,7 +145,7 @@ async fn handle_does_not_save_when_active_ownership_exists() {
 }
 
 #[tokio::test]
-async fn handle_propagates_has_active_ownership_error() {
+async fn handle_propagates_has_open_ownership_error() {
     let repo = MockOwnershipRepository::failing_on_check(RepositoryError::StorageFailure(
         "connection lost".into(),
     ));

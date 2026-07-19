@@ -14,12 +14,10 @@ mod tests {
     use domain::{CustomerId, VehicleId, VehicleOwnershipId};
 
     /// A repeat `save` of the same `VehicleOwnershipId` (a duplicate create)
-    /// must be rejected as a version conflict — through optimistic locking, not
-    /// through a separate "already exists" check.
+    /// must be rejected as `AlreadyExists`, not as a version conflict.
     ///
-    /// Повторный `save` того же `VehicleOwnershipId` (дубликат create) должен
-    /// быть отклонён как конфликт версий — optimistic locking, не отдельная
-    /// проверка «уже существует».
+    /// Повторный `save` того же `VehicleOwnershipId` (дубликат `start`) должен
+    /// возвращать `AlreadyExists`, а не конфликт версий.
     #[tokio::test]
     async fn rejects_duplicate_vehicle_ownership_start() {
         // Arrange
@@ -59,11 +57,88 @@ mod tests {
         let result = repository.save(&duplicate_ownership).await;
 
         // Assert
+        assert_eq!(result, Err(RepositoryError::AlreadyExists));
+    }
+
+    /// Saving the same freshly-created aggregate a second time (same object,
+    /// no intervening command) must also return `AlreadyExists`.
+    ///
+    /// Повторный `save` того же только что созданного агрегата (тот же объект,
+    /// без промежуточных команд) должен также возвращать `AlreadyExists`.
+    #[tokio::test]
+    async fn save_same_freshly_created_ownership_twice_returns_already_exists() {
+        let repository = InMemoryVehicleOwnershipRepository::new();
+        let now = Utc::now();
+        let vehicle_id = VehicleId::new();
+
+        let ownership = VehicleOwnership::start(
+            VehicleOwnershipId::new(),
+            vehicle_id,
+            CustomerId::new(),
+            OwnershipType::Private,
+            OwnershipEligibilitySnapshot::new(vehicle_id, false),
+            now,
+        )
+        .expect("ownership should be valid");
+
+        repository
+            .save(&ownership)
+            .await
+            .expect("first save should succeed");
+
+        let result = repository.save(&ownership).await;
+        assert_eq!(result, Err(RepositoryError::AlreadyExists));
+    }
+
+    /// A stale update — saving a version that skipped an intermediate
+    /// persistence step — must be rejected as `VersionConflict`.
+    ///
+    /// Scenario: start → v1, save (stored v1), verify → v2, end → v3, then
+    /// try to save v3 without having saved v2. The store holds v1 and expects
+    /// v2, but receives v3, which is a genuine stale write.
+    ///
+    /// Устаревшее обновление — сохранение версии, пропустившей промежуточный
+    /// шаг персистентности, — должно возвращать `VersionConflict`.
+    ///
+    /// Сценарий: start → v1, save (в хранилище v1), verify → v2, end → v3,
+    /// затем попытаться сохранить v3, не сохранив v2. Хранилище держит v1 и
+    /// ждёт v2, но получает v3 — это настоящая устаревшая запись.
+    #[tokio::test]
+    async fn rejects_stale_ownership_update() {
+        let repository = InMemoryVehicleOwnershipRepository::new();
+        let vehicle_id = VehicleId::new();
+        let started_at = Utc::now();
+        let verified_at = started_at + chrono::Duration::minutes(1);
+        let ended_at = verified_at + chrono::Duration::minutes(1);
+
+        let mut ownership = VehicleOwnership::start(
+            VehicleOwnershipId::new(),
+            vehicle_id,
+            CustomerId::new(),
+            OwnershipType::Private,
+            OwnershipEligibilitySnapshot::new(vehicle_id, false),
+            started_at,
+        )
+        .expect("ownership should be valid");
+
+        repository
+            .save(&ownership)
+            .await
+            .expect("first save (v1) should succeed");
+
+        // Apply two commands without saving — ownership advances to v3
+        ownership
+            .verify(verified_at)
+            .expect("verify should succeed");
+        ownership.end(ended_at).expect("end should succeed");
+
+        // stored=v1, expected=v2, actual=v3
+        let result = repository.save(&ownership).await;
         assert_eq!(
             result,
             Err(RepositoryError::VersionConflict {
                 expected: 2,
-                actual: 1,
+                actual: 3
             })
         );
     }

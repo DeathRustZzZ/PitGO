@@ -15,22 +15,13 @@
 //! | Source                                          | HTTP status | `error` code                       |
 //! |--------------------------------------------------|-------------|-------------------------------------|
 //! | `RepositoryError::VersionConflict`                | 409         | `version_conflict`                  |
+//! | `RepositoryError::AlreadyExists`                  | 409         | `already_exists`                    |
 //! | `RepositoryError::StorageFailure`                 | 500         | `internal`                          |
 //! | `OwnershipError::ActiveOwnershipAlreadyExists`    | 409         | `active_ownership_already_exists`   |
 //! | `OwnershipError::StatusDoesNotAllow`               | 409         | `ownership_status_does_not_allow`   |
 //! | `OwnershipError::PeriodEndBeforeStart`             | 422         | `ownership_period_invalid`          |
 //! | not found (customer, from routers/customer.rs)    | 404         | `customer_not_found`                |
 //! | not found (vehicle, from routers/vehicle.rs)       | 404         | `vehicle_not_found`                 |
-//!
-//! Note on `version_conflict` and duplicate creates: `RepositoryError` does not
-//! (yet) distinguish "the aggregate changed under a concurrent writer" from
-//! "this id was already created" — both surface as `VersionConflict` (see the
-//! doc comment on that variant). A retried `POST` for the same id therefore
-//! receives `409 version_conflict`, not `201 Created`; it cannot currently be
-//! treated as an idempotently successful create. A dedicated `already_exists`
-//! code — distinguishable from a genuine concurrent-write conflict — needs a
-//! new `RepositoryError` variant in the application layer first, which is out
-//! of scope here.
 //!
 //! HTTP-представление ошибок API бэкенда.
 //!
@@ -43,22 +34,13 @@
 //! | Источник                                          | HTTP-статус | код `error`                        |
 //! |----------------------------------------------------|-------------|--------------------------------------|
 //! | `RepositoryError::VersionConflict`                  | 409         | `version_conflict`                   |
+//! | `RepositoryError::AlreadyExists`                    | 409         | `already_exists`                     |
 //! | `RepositoryError::StorageFailure`                   | 500         | `internal`                           |
 //! | `OwnershipError::ActiveOwnershipAlreadyExists`      | 409         | `active_ownership_already_exists`    |
 //! | `OwnershipError::StatusDoesNotAllow`                 | 409         | `ownership_status_does_not_allow`    |
 //! | `OwnershipError::PeriodEndBeforeStart`               | 422         | `ownership_period_invalid`           |
 //! | not found (клиент, из routers/customer.rs)          | 404         | `customer_not_found`                 |
 //! | not found (автомобиль, из routers/vehicle.rs)        | 404         | `vehicle_not_found`                  |
-//!
-//! Про `version_conflict` и повторное создание: `RepositoryError` пока не
-//! различает «агрегат изменился под конкурентным писателем» и «этот
-//! идентификатор уже был создан» — оба случая проявляются как
-//! `VersionConflict` (см. doc-комментарий этого варианта). Поэтому повторный
-//! `POST` с тем же идентификатором получает `409 version_conflict`, а не
-//! `201 Created`; сейчас его нельзя считать идемпотентно успешным созданием.
-//! Отдельный код `already_exists`, отличимый от настоящего конфликта
-//! конкурентной записи, требует нового варианта `RepositoryError` в слое
-//! приложения — это вне границ данной задачи.
 //!
 //! This separation is a security boundary as much as a design one. An
 //! application error may carry a driver message, a connection string fragment
@@ -270,6 +252,30 @@ impl ApiError {
             },
         }
     }
+
+    /// Creates the `409 Conflict` / `already_exists` response.
+    ///
+    /// Returned when a repository detects that an aggregate with the same id
+    /// was already persisted. Unlike `version_conflict` (a concurrent-write
+    /// collision on an existing aggregate), this code signals that the id
+    /// itself is taken — retrying the same create will never succeed.
+    ///
+    /// Создаёт ответ `409 Conflict` / `already_exists`.
+    ///
+    /// Возвращается, когда репозиторий обнаруживает, что агрегат с тем же
+    /// идентификатором уже был сохранён. В отличие от `version_conflict`
+    /// (коллизии конкурентной записи существующего агрегата), этот код
+    /// сигнализирует о том, что сам идентификатор занят — повтор того же
+    /// создания никогда не завершится успехом.
+    fn already_exists() -> Self {
+        Self {
+            status: StatusCode::CONFLICT,
+            body: ErrorBody {
+                error: "already_exists".to_string(),
+                message: "An aggregate with this identifier already exists.".to_string(),
+            },
+        }
+    }
 }
 
 impl IntoResponse for ApiError {
@@ -314,6 +320,15 @@ impl From<ApplicationError> for ApiError {
         match e {
             ApplicationError::Repository(repo_err) => match repo_err {
                 RepositoryError::VersionConflict { .. } => ApiError::version_conflict(),
+
+                // The underlying message is dropped deliberately: it can name
+                // internal storage details that must not reach an API client.
+                //
+                // Исходное сообщение намеренно отбрасывается: оно может
+                // раскрывать внутренние детали хранилища, которые не должны
+                // дойти до клиента API.
+                RepositoryError::AlreadyExists => ApiError::already_exists(),
+
                 // The underlying message is dropped deliberately: it can name
                 // internal storage details that must not reach an API client.
                 //
@@ -466,5 +481,15 @@ mod tests {
 
         assert_eq!(status, StatusCode::NOT_FOUND);
         assert_eq!(body.error, "vehicle_not_found");
+    }
+
+    #[tokio::test]
+    async fn already_exists_maps_to_409() {
+        let err = ApiError::from(ApplicationError::Repository(RepositoryError::AlreadyExists));
+
+        let (status, body) = decode(err).await;
+
+        assert_eq!(status, StatusCode::CONFLICT);
+        assert_eq!(body.error, "already_exists");
     }
 }

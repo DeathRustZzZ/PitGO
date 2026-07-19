@@ -144,7 +144,7 @@ impl VehicleOwnership {
         snapshot: OwnershipEligibilitySnapshot,
         now: DateTime<Utc>,
     ) -> Result<Self, OwnershipError> {
-        if !snapshot.no_active_ownership_exists() {
+        if !snapshot.no_open_ownership_exists() {
             return Err(OwnershipError::ActiveOwnershipAlreadyExists);
         }
 

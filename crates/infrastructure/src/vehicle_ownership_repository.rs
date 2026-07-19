@@ -74,24 +74,18 @@ impl InMemoryVehicleOwnershipRepository {
 impl VehicleOwnershipRepository for InMemoryVehicleOwnershipRepository {
     /// Saves an ownership record, enforcing the optimistic-locking contract.
     ///
-    /// A write is accepted only if the incoming aggregate is exactly one
-    /// version ahead of the stored one. When nothing is stored, `expected` is
-    /// `None` and the first insert succeeds unconditionally.
-    ///
-    /// A duplicate `start` for the same `ownership_id` therefore surfaces as a
-    /// `VersionConflict`: it arrives at version 1 while the store already holds
-    /// version 1 and expects 2.
+    /// A first insert always succeeds. A duplicate `start` for the same
+    /// `ownership_id` (version 1 while an entry already exists) returns
+    /// `AlreadyExists`. A stale update (the stored version's successor does
+    /// not match the incoming version) returns `VersionConflict`.
     ///
     /// Сохраняет запись о владении, обеспечивая контракт оптимистичной
     /// блокировки.
     ///
-    /// Запись принимается, только если входящий агрегат ровно на одну версию
-    /// впереди сохранённого. Если ничего не сохранено, `expected` равно `None`
-    /// и первая вставка проходит безусловно.
-    ///
-    /// Поэтому повторный `start` для того же `ownership_id` проявляется как
-    /// `VersionConflict`: он приходит с версией 1, тогда как в хранилище уже
-    /// лежит версия 1 и ожидается 2.
+    /// Первая вставка всегда проходит. Повторный `start` для того же
+    /// `ownership_id` (версия 1, когда запись уже существует) возвращает
+    /// `AlreadyExists`. Устаревшее обновление (следующая ожидаемая версия не
+    /// совпадает со входящей) возвращает `VersionConflict`.
     async fn save(&self, ownership: &VehicleOwnership) -> Result<(), RepositoryError> {
         // A poisoned lock means another thread panicked mid-write; reported as
         // a storage failure rather than unwrapped, so one panicking request
@@ -105,19 +99,8 @@ impl VehicleOwnershipRepository for InMemoryVehicleOwnershipRepository {
             .lock()
             .map_err(|e| RepositoryError::StorageFailure(e.to_string()))?;
 
-        let actual = ownership.version();
-        let expected = ownerships
-            .get(&ownership.id())
-            .map(|stored| stored.version().next());
-
-        if let Some(expected_version) = expected
-            && expected_version != actual
-        {
-            return Err(RepositoryError::VersionConflict {
-                expected: expected_version.value(),
-                actual: actual.value(),
-            });
-        }
+        let stored = ownerships.get(&ownership.id()).map(|o| o.version());
+        crate::check_version(stored, ownership.version())?;
         ownerships.insert(ownership.id(), ownership.clone());
         Ok(())
     }
@@ -175,11 +158,11 @@ impl VehicleOwnershipRepository for InMemoryVehicleOwnershipRepository {
             .lock()
             .map_err(|e| RepositoryError::StorageFailure(e.to_string()))?;
 
-        let has_active = ownerships
+        let has_open = ownerships
             .values()
             .any(|ownership| ownership.vehicle_id() == vehicle_id && ownership.status().is_open());
 
-        Ok(has_active)
+        Ok(has_open)
     }
 }
 
