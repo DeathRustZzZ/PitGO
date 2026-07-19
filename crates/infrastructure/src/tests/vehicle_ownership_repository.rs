@@ -98,8 +98,8 @@ mod tests {
         let vehicle_id = VehicleId::new();
         let owner_customer_id = CustomerId::new();
         let started_at = Utc::now();
-        let varified_at = started_at + chrono::Duration::minutes(1);
-        let ended_at = varified_at + chrono::Duration::minutes(1);
+        let verified_at = started_at + chrono::Duration::minutes(1);
+        let ended_at = verified_at + chrono::Duration::minutes(1);
 
         let mut ownership = VehicleOwnership::start(
             ownership_id,
@@ -112,7 +112,7 @@ mod tests {
         .expect("ownership should be valid");
 
         ownership
-            .verify(varified_at)
+            .verify(verified_at)
             .expect("ownership verification should succeed");
 
         ownership
@@ -166,8 +166,7 @@ mod tests {
         assert!(!has_open_ownership);
     }
 
-    // Test to ensure that the second start of ownership on the same vehicle is rejected by the real repository
-    #[tokio::test()]
+    #[tokio::test]
     async fn second_start_on_same_vehicle_is_rejected_by_real_repository() {
         let repository = Arc::new(InMemoryVehicleOwnershipRepository::new());
 
@@ -189,7 +188,7 @@ mod tests {
             .await
             .expect("firs ownership should start successfully");
 
-        let seccond_command = StartVehicleOwnershipCommand {
+        let second_command = StartVehicleOwnershipCommand {
             ownership_id: VehicleOwnershipId::new(),
             vehicle_id,
             owner_customer_id: CustomerId::new(),
@@ -197,7 +196,7 @@ mod tests {
         };
 
         let error = handler
-            .handle(seccond_command)
+            .handle(second_command)
             .await
             .expect_err("second active ownership for the same vehicle must be rejected");
 
