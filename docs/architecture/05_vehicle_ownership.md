@@ -36,7 +36,7 @@ flowchart TD
 
   ADP["InMemoryVehicleOwnershipRepository<br/>Mutex HashMap"]
 
-  SNAP["OwnershipEligibilitySnapshot<br/>vehicle_id, has_active_ownership"]
+  SNAP["OwnershipEligibilitySnapshot<br/>vehicle_id, has_open_ownership"]
   AGG["VehicleOwnership::start(...)"]
   ISOPEN["OwnershipStatus::is_open()"]
 
@@ -57,7 +57,7 @@ flowchart TD
 
   H -->|"2 - строит"| SNAP
   SNAP -->|"3 - передаёт как доказательство"| AGG
-  AGG -->|"no_active_ownership_exists()?"| SNAP
+  AGG -->|"no_open_ownership_exists()?"| SNAP
   AGG -->|"нет - ActiveOwnershipAlreadyExists"| ERR
   AGG -->|"да - агрегат создан"| M2
 

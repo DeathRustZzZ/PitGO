@@ -53,7 +53,7 @@ sequenceDiagram
   Note over H: упаковывает факт в снимок
   H->>Agg: start(..., snapshot, now) — sync
   activate Agg
-  Agg->>Agg: no_active_ownership_exists()? да
+  Agg->>Agg: no_open_ownership_exists()? да
   Agg->>Agg: status = PendingVerification
   Agg->>Agg: raise(Started) — версия 0 → 1
   Agg-->>H: Ok(VehicleOwnership)

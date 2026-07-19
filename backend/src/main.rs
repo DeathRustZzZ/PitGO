@@ -36,6 +36,8 @@ use infrastructure::vehicle_ownership_repository::InMemoryVehicleOwnershipReposi
 use infrastructure::vehicle_repository::InMemoryVehicleRepository;
 mod error;
 mod routers;
+#[cfg(test)]
+mod tests;
 use std::{net::SocketAddr, sync::Arc};
 use tower_http::cors::CorsLayer;
 

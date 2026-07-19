@@ -146,10 +146,10 @@ classDiagram
   class OwnershipEligibilitySnapshot {
     <<capability>>
     -vehicle_id: VehicleId
-    -has_active_ownership: bool
+    -has_open_ownership: bool
     +new(vehicle_id, flag) Snapshot$
     +vehicle_id() VehicleId
-    +no_active_ownership_exists() bool
+    +no_open_ownership_exists() bool
   }
 
   ActivationPermit ..> Customer: предъявляется в activate()
@@ -294,6 +294,7 @@ classDiagram
   class RepositoryError {
     <<enumeration>>
     VersionConflict
+    AlreadyExists
     StorageFailure(String)
   }
   class ApiError {

@@ -42,12 +42,6 @@
 //! | not found (клиент, из routers/customer.rs)          | 404         | `customer_not_found`                 |
 //! | not found (автомобиль, из routers/vehicle.rs)        | 404         | `vehicle_not_found`                  |
 //!
-//! This separation is a security boundary as much as a design one. An
-//! application error may carry a driver message, a connection string fragment
-//! or a poisoned-lock description; none of that may reach a client. Every
-//! conversion here therefore *discards* the inner error's text and substitutes
-//! a fixed, reviewed message.
-//!
 //! Это разделение является не столько архитектурной, сколько защитной границей.
 //! Ошибка приложения может нести сообщение драйвера, фрагмент строки
 //! подключения или описание отравленной блокировки; ничего из этого не должно
@@ -146,15 +140,20 @@ impl ApiError {
 
     /// Creates the `409 Conflict` / `version_conflict` response.
     ///
-    /// Covers optimistic-locking conflicts and, until `RepositoryError` gains a
-    /// dedicated variant, duplicate creates for the same id (see the module
-    /// doc comment).
+    /// Covers optimistic-locking conflicts only: an existing aggregate was
+    /// modified concurrently, so the caller's version is stale. A duplicate
+    /// create is a different failure and maps to `already_exists` instead —
+    /// the distinction matters to clients, because a stale write is worth
+    /// retrying after a reload while a taken id never is.
     ///
     /// Создаёт ответ `409 Conflict` / `version_conflict`.
     ///
-    /// Покрывает конфликты оптимистичной блокировки и, пока `RepositoryError`
-    /// не получит отдельный вариант, повторное создание с тем же
-    /// идентификатором (см. doc-комментарий модуля).
+    /// Покрывает только конфликты оптимистичной блокировки: существующий
+    /// агрегат был изменён конкурентно, поэтому версия у вызывающей стороны
+    /// устарела. Повторное создание — другой вид отказа, он отображается в
+    /// `already_exists`. Различие существенно для клиентов: устаревшую запись
+    /// имеет смысл повторить после перечитывания, а занятый идентификатор —
+    /// никогда.
     fn version_conflict() -> Self {
         Self {
             status: StatusCode::CONFLICT,
@@ -349,147 +348,5 @@ impl From<ApplicationError> for ApiError {
                 }
             },
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    //! Behavioral tests of the `ApplicationError` → `ApiError` contract.
-    //!
-    //! Each test drives `into_response()` and parses the JSON body, the same
-    //! way a real API client would, rather than reaching into `ApiError`'s
-    //! private fields. This exercises the actual wire contract instead of the
-    //! internal representation.
-    //!
-    //! Поведенческие тесты контракта `ApplicationError` → `ApiError`.
-    //!
-    //! Каждый тест прогоняет `into_response()` и разбирает JSON-тело — так же,
-    //! как это делал бы настоящий клиент API, — вместо обращения к приватным
-    //! полям `ApiError`. Это проверяет действительный контракт «на проводе», а
-    //! не внутреннее представление.
-
-    use super::*;
-    use axum::body::to_bytes;
-    use domain::vehicle_ownership::state::OwnershipStatusKind;
-    use serde::Deserialize;
-
-    #[derive(Deserialize)]
-    struct WireErrorBody {
-        error: String,
-        message: String,
-    }
-
-    async fn decode(err: ApiError) -> (StatusCode, WireErrorBody) {
-        let status = err.status;
-        let response = err.into_response();
-        let body = to_bytes(response.into_body(), usize::MAX)
-            .await
-            .expect("body should be readable");
-        let decoded: WireErrorBody =
-            serde_json::from_slice(&body).expect("body should be valid JSON matching the contract");
-        (status, decoded)
-    }
-
-    #[tokio::test]
-    async fn version_conflict_maps_to_409() {
-        let err = ApiError::from(ApplicationError::Repository(
-            RepositoryError::VersionConflict {
-                expected: 2,
-                actual: 1,
-            },
-        ));
-
-        let (status, body) = decode(err).await;
-
-        assert_eq!(status, StatusCode::CONFLICT);
-        assert_eq!(body.error, "version_conflict");
-    }
-
-    #[tokio::test]
-    async fn storage_failure_maps_to_500_internal() {
-        let err = ApiError::from(ApplicationError::Repository(
-            RepositoryError::StorageFailure("secret detail".to_string()),
-        ));
-
-        let (status, body) = decode(err).await;
-
-        assert_eq!(status, StatusCode::INTERNAL_SERVER_ERROR);
-        assert_eq!(body.error, "internal");
-    }
-
-    #[tokio::test]
-    async fn storage_failure_message_does_not_leak_internal_detail() {
-        let err = ApiError::from(ApplicationError::Repository(
-            RepositoryError::StorageFailure("secret detail".to_string()),
-        ));
-
-        let (_, body) = decode(err).await;
-
-        assert!(
-            !body.message.contains("secret detail"),
-            "message must not leak the repository's internal diagnostic text"
-        );
-    }
-
-    #[tokio::test]
-    async fn active_ownership_already_exists_maps_to_409() {
-        let err = ApiError::from(ApplicationError::Ownership(
-            OwnershipError::ActiveOwnershipAlreadyExists,
-        ));
-
-        let (status, body) = decode(err).await;
-
-        assert_eq!(status, StatusCode::CONFLICT);
-        assert_eq!(body.error, "active_ownership_already_exists");
-    }
-
-    #[tokio::test]
-    async fn ownership_status_does_not_allow_maps_to_409() {
-        let err = ApiError::from(ApplicationError::Ownership(
-            OwnershipError::StatusDoesNotAllow(OwnershipStatusKind::Ended),
-        ));
-
-        let (status, body) = decode(err).await;
-
-        assert_eq!(status, StatusCode::CONFLICT);
-        assert_eq!(body.error, "ownership_status_does_not_allow");
-    }
-
-    #[tokio::test]
-    async fn ownership_period_before_start_maps_to_422() {
-        let err = ApiError::from(ApplicationError::Ownership(
-            OwnershipError::PeriodEndBeforeStart,
-        ));
-
-        let (status, body) = decode(err).await;
-
-        assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY);
-        assert_eq!(body.error, "ownership_period_invalid");
-    }
-
-    #[tokio::test]
-    async fn customer_not_found_maps_to_404() {
-        let (status, body) = decode(ApiError::customer_not_found()).await;
-
-        assert_eq!(status, StatusCode::NOT_FOUND);
-        assert_eq!(body.error, "customer_not_found");
-    }
-
-    #[tokio::test]
-    async fn vehicle_not_found_maps_to_404() {
-        let (status, body) = decode(ApiError::vehicle_not_found()).await;
-
-        assert_eq!(status, StatusCode::NOT_FOUND);
-        assert_eq!(body.error, "vehicle_not_found");
-    }
-
-    #[tokio::test]
-    async fn already_exists_maps_to_409() {
-        let err = ApiError::from(ApplicationError::Repository(RepositoryError::AlreadyExists));
-
-        let (status, body) = decode(err).await;
-
-        assert_eq!(status, StatusCode::CONFLICT);
-        assert_eq!(body.error, "already_exists");
     }
 }

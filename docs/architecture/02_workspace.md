@@ -23,11 +23,13 @@ flowchart TD
 
     subgraph be["backend (bin, edition 2024)"]
       be_main["main.rs<br/>AppState, Router, health"]
-      be_err["error.rs<br/>ApiError"]
+      be_err["error.rs<br/>ApiError, таблица кодов"]
       be_rt["routers/<br/>customer, vehicle, vehicle_ownership"]
+      be_t["tests/<br/>error - 9 тестов маппинга"]
     end
 
     subgraph inf["infrastructure (lib, edition 2024)"]
+      inf_l["lib.rs<br/>check_version - общий хелпер"]
       inf_c["customer_repository.rs"]
       inf_v["vehicle_repository.rs"]
       inf_o["vehicle_ownership_repository.rs"]
@@ -63,7 +65,7 @@ flowchart TD
   be --> dm
   inf --> ap
   inf --> dm
-  inf -.->|"объявлено в Cargo.toml,<br/>но не используется"| sh
+  inf -->|"AggregateVersion<br/>в check_version"| sh
   ap --> dm
   dm --> sh
 ```
@@ -85,13 +87,14 @@ flowchart TD
 жёстко. Это работает, но версия и лицензия у трёх крейтов тоже прописаны
 вручную вместо `workspace = true`.
 
-**`infrastructure → shared` объявлена, но не задействована.** В
-`crates/infrastructure/Cargo.toml` есть `shared = {path = "../shared"}`, при
-этом ни один файл крейта не содержит `shared::`. Типы вроде `AggregateVersion`
-приходят транзитивно через `domain`. Отсюда пунктир на диаграмме.
+**`domain → serde` объявлена, но не задействована.** `serde` есть в
+зависимостях `domain`, но в коде крейта не встречается: доменные типы не
+сериализуются, этим занимаются DTO транспортного слоя.
 
-**`domain → serde` объявлена, но не задействована.** Аналогично: `serde` есть
-в зависимостях `domain`, но в коде крейта не встречается.
+**`infrastructure/lib.rs` — уже не только объявления модулей.** С PR #9 там
+живёт `pub(crate) fn check_version` — общая проверка версии, вынесенная из трёх
+адаптеров, чтобы правило «дубликат создания против устаревшей записи» было
+записано один раз, а не трижды.
 
 **`sqlx` в `[workspace.dependencies]` не используется ни одним крейтом.**
 Заготовлена под будущий PostgreSQL-адаптер — см.

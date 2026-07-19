@@ -34,7 +34,7 @@ flowchart TD
 
   INF -->|"application<br/>порты + RepositoryError"| APP
   INF -->|"domain<br/>агрегаты"| DOM
-  INF -.->|"shared - объявлена,<br/>но не используется"| SH
+  INF -->|"shared<br/>AggregateVersion в check_version"| SH
 
   APP -->|"domain"| DOM
 
@@ -47,8 +47,8 @@ flowchart TD
 
 | Крейт | Внутренние | Внешние | Dev-зависимости |
 |---|---|---|---|
-| `backend` | application, infrastructure, domain | axum, tower-http, tokio, tracing, tracing-subscriber, serde, uuid, chrono | — |
-| `infrastructure` | application, domain, ~~shared~~ | async-trait | chrono, tokio |
+| `backend` | application, infrastructure, domain | axum, tower-http, tokio, tracing, tracing-subscriber, serde, uuid, chrono | serde_json |
+| `infrastructure` | application, domain, shared | async-trait | chrono, tokio |
 | `application` | domain | chrono, thiserror, async-trait | tokio |
 | `domain` | shared | chrono, thiserror, uuid, ~~serde~~ | — |
 | `shared` | — | chrono, serde, uuid | — |
@@ -91,11 +91,14 @@ flowchart LR
 
 ## Замечания
 
-**Две неиспользуемые зависимости.** `infrastructure → shared` и
-`domain → serde` объявлены, но не задействованы. Они не ломают сборку, но
-искажают граф: по `Cargo.toml` кажется, что `infrastructure` работает с
-разделяемым ядром напрямую, тогда как типы вроде `AggregateVersion` приходят
-транзитивно через `domain`.
+**`infrastructure → shared` теперь задействована.** До PR #9 зависимость была
+объявлена, но в коде не встречалась. Появившийся в `infrastructure/lib.rs`
+хелпер `check_version` принимает `shared::aggregate::AggregateVersion`
+напрямую, поэтому стрелка стала настоящей.
+
+**`domain → serde` по-прежнему не задействована.** Объявлена в `Cargo.toml`
+крейта `domain`, но `serde` не встречается ни в одном его файле: доменные типы
+не сериализуются — этим занимаются DTO транспортного слоя.
 
 **`backend → domain` — намеренная и корректная связь.** Транспортный слой
 импортирует `OwnershipError` (для сопоставления с HTTP-кодами) и
