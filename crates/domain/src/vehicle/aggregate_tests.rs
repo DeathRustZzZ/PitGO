@@ -1,3 +1,17 @@
+//! Unit tests for the [`Vehicle`] aggregate.
+//!
+//! Verify that creation and activation each raise exactly one event and advance
+//! the version by one, that activating an already-`Active` vehicle is an
+//! idempotent `NoChange` rather than an error, and that the permit's local
+//! conditions — matching `vehicle_id` and expiry — are enforced.
+//!
+//! Юнит-тесты агрегата [`Vehicle`].
+//!
+//! Проверяют, что создание и активация порождают ровно одно событие и
+//! увеличивают версию на единицу; что активация уже активного автомобиля даёт
+//! идемпотентный `NoChange`, а не ошибку; и что локальные условия permit —
+//! совпадение `vehicle_id` и срок действия — действительно проверяются.
+
 use chrono::Duration;
 
 use shared::aggregate::ChangeOutcome;
