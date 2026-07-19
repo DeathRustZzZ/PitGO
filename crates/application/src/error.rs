@@ -85,12 +85,7 @@ pub enum RepositoryError {
     /// another writer committed in between. The write is refused rather than
     /// applied, since applying it would silently discard the other change.
     ///
-    /// Also produced when the same aggregate is created twice: the second
-    /// create arrives at version 1 while the store already holds version 1 and
-    /// expects 2, so a duplicate surfaces as a conflict rather than needing a
-    /// separate "already exists" variant.
-    ///
-    /// Callers should reload the aggregate and retry, or report `409 Conflict`.
+    /// Callers should reload the aggregate and retry.
     ///
     /// Конфликт оптимистичной блокировки: агрегат изменился «под» писателем.
     ///
@@ -98,13 +93,7 @@ pub enum RepositoryError {
     /// промежутке зафиксировался другой писатель. Запись отклоняется, а не
     /// применяется, поскольку её применение молча отбросило бы чужое изменение.
     ///
-    /// Возникает также при повторном создании одного и того же агрегата:
-    /// второе создание приходит с версией 1, тогда как в хранилище уже лежит
-    /// версия 1 и ожидается 2 — поэтому дубликат проявляется как конфликт и не
-    /// требует отдельного варианта «уже существует».
-    ///
-    /// Вызывающей стороне следует перечитать агрегат и повторить попытку либо
-    /// сообщить `409 Conflict`.
+    /// Вызывающей стороне следует перечитать агрегат и повторить попытку.
     #[error("optimistic lock conflict: expected version {expected}, found {actual}")]
     VersionConflict {
         /// Version the repository required for the write to be safe.
@@ -132,4 +121,18 @@ pub enum RepositoryError {
     /// так как может раскрыть внутренние детали.
     #[error("storage failure: {0}")]
     StorageFailure(String),
+
+    /// The aggregate was already stored when a new aggregate was saved.
+    ///
+    /// The repository cannot distinguish a repeated `save` of the same
+    /// newly-created object from a second create request; both arrive at
+    /// version 1 and are reported as `AlreadyExists`.
+    ///
+    /// Этот агрегат уже был сохранён, когда новый агрегат пытались сохранить.
+    ///
+    /// Репозиторий не может отличить повторный `save` одного и того же
+    /// вновь созданного объекта от второго запроса на создание; оба приходят с
+    /// версией 1 и сообщаются как `AlreadyExists`.
+    #[error("aggregate already exists")]
+    AlreadyExists,
 }

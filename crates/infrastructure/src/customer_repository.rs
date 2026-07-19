@@ -68,28 +68,17 @@ impl InMemoryCustomerRepository {
 impl CustomerRepository for InMemoryCustomerRepository {
     /// Saves a customer, enforcing the optimistic-locking contract.
     ///
-    /// The expected version is derived from what is already stored: a write is
-    /// only accepted if the incoming aggregate is exactly one version ahead of
-    /// the stored one. When nothing is stored yet, `expected` is `None` and any
-    /// version is accepted, which is how a first insert succeeds.
-    ///
-    /// This is also what rejects a duplicate create. A second
-    /// `Customer::create` for the same id arrives at version 1 while the store
-    /// already holds version 1 and therefore expects 2 — so the duplicate
-    /// surfaces as a `VersionConflict` and no separate existence check is
-    /// needed.
+    /// A first insert always succeeds. A duplicate create (version 1 while
+    /// an entry already exists) returns `AlreadyExists`. A stale update
+    /// (the stored version's successor does not match the incoming version)
+    /// returns `VersionConflict`.
     ///
     /// Сохраняет клиента, обеспечивая контракт оптимистичной блокировки.
     ///
-    /// Ожидаемая версия выводится из уже сохранённого значения: запись
-    /// принимается, только если входящий агрегат ровно на одну версию впереди
-    /// сохранённого. Если ничего ещё не сохранено, `expected` равно `None` и
-    /// принимается любая версия — так проходит первая вставка.
-    ///
-    /// Этим же отклоняется повторное создание. Второй вызов `Customer::create`
-    /// для того же идентификатора приходит с версией 1, тогда как в хранилище
-    /// уже лежит версия 1 и, значит, ожидается 2 — поэтому дубликат проявляется
-    /// как `VersionConflict`, и отдельная проверка существования не нужна.
+    /// Первая вставка всегда проходит. Повторное создание (версия 1, когда
+    /// запись уже существует) возвращает `AlreadyExists`. Устаревшее обновление
+    /// (следующая ожидаемая версия не совпадает со входящей) возвращает
+    /// `VersionConflict`.
     async fn save(&self, customer: &Customer) -> Result<(), application::error::RepositoryError> {
         // A poisoned lock means another thread panicked mid-write, so the map
         // may be inconsistent. Reported as a storage failure rather than
@@ -104,19 +93,8 @@ impl CustomerRepository for InMemoryCustomerRepository {
             .lock()
             .map_err(|e| RepositoryError::StorageFailure(e.to_string()))?;
 
-        let actual = customer.version();
-        let expected = customers
-            .get(&customer.id())
-            .map(|stored| stored.version().next());
-
-        if let Some(expected_version) = expected
-            && expected_version != actual
-        {
-            return Err(RepositoryError::VersionConflict {
-                expected: expected_version.value(),
-                actual: actual.value(),
-            });
-        }
+        let stored = customers.get(&customer.id()).map(|c| c.version());
+        crate::check_version(stored, customer.version())?;
         customers.insert(customer.id(), customer.clone());
 
         Ok(())

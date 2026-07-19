@@ -45,3 +45,54 @@ pub mod customer_repository;
 pub mod tests;
 pub mod vehicle_ownership_repository;
 pub mod vehicle_repository;
+
+/// Checks whether an aggregate being saved has a consistent version.
+///
+/// Returns `Ok(())` on a first insert (nothing stored yet) and on a valid
+/// in-sequence update. Returns `AlreadyExists` when a freshly-created aggregate
+/// (version 1) is saved while a stored entry already exists — that is a
+/// duplicate create, not a stale update. Returns `VersionConflict` when an
+/// existing entry's next expected version does not match the incoming one.
+///
+/// # Assumption
+///
+/// Every aggregate `create` raises exactly one event, so a freshly-created
+/// aggregate always arrives at version 1. Adapters that call this helper must
+/// honour that invariant: an adapter whose `create` raises more than one event
+/// would misclassify a genuine stale update as a duplicate create whenever
+/// the incoming version happens to be 1.
+///
+/// Проверяет, что агрегат, сохраняемый в репозитории, имеет согласованную версию.
+///
+/// Возвращает `Ok(())` при первой вставке (ещё ничего не сохранено) и при корректном обновлении по порядку.
+/// Возвращает `AlreadyExists`, если агрегат, только что созданный (версия 1), сохраняется,
+/// в то время как уже существует сохранённая запись — это дублирующее создание, а не устаревшее обновление.
+/// Возвращает `VersionConflict`, если следующая ожидаемая версия существующей записи не совпадает с входящей
+/// версией.
+///
+/// # Предположение
+/// Каждое создание агрегата вызывает ровно одно событие, поэтому только что созданный агрегат всегда приходит
+/// с версией 1. Адаптеры, вызывающие эту функцию, должны соблюдать это инвариант: адаптер, чей `create`
+/// вызывает более одного события, неверно классифицировал бы подлинное устаревшее обновление как
+/// дублирующее создание, если входящая версия случайно равна 1.
+pub(crate) fn check_version(
+    stored: Option<shared::aggregate::AggregateVersion>,
+    incoming: shared::aggregate::AggregateVersion,
+) -> Result<(), application::error::RepositoryError> {
+    use application::error::RepositoryError;
+
+    let Some(stored_version) = stored else {
+        return Ok(());
+    };
+    if incoming.value() == 1 {
+        return Err(RepositoryError::AlreadyExists);
+    }
+    let expected = stored_version.next();
+    if expected != incoming {
+        return Err(RepositoryError::VersionConflict {
+            expected: expected.value(),
+            actual: incoming.value(),
+        });
+    }
+    Ok(())
+}
