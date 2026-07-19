@@ -126,6 +126,6 @@ pub async fn get_customer(
             created_at: customer.created_at(),
             updated_at: customer.updated_at(),
         })),
-        None => Err(ApiError::not_found("Customer not found.")),
+        None => Err(ApiError::customer_not_found()),
     }
 }
