@@ -145,7 +145,7 @@ async fn main() {
     // предпочтительнее работы в незаметно сломанном состоянии.
     let listener = tokio::net::TcpListener::bind(addr)
         .await
-        .expect("Faild to bind TCP listener");
+        .expect("Failed to bind TCP listener");
 
     axum::serve(listener, app).await.expect("Server failed");
 }

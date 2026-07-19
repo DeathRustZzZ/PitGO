@@ -236,7 +236,7 @@ mod tests {
         handler
             .handle(first_command)
             .await
-            .expect("firs ownership should start successfully");
+            .expect("first ownership should start successfully");
 
         let second_command = StartVehicleOwnershipCommand {
             ownership_id: VehicleOwnershipId::new(),
