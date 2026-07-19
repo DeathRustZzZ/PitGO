@@ -19,7 +19,7 @@ impl StartVehicleOwnershipHandler {
     /// Handles the StartVehicleOwnershipCommand
     pub async fn handle(&self, cmd: StartVehicleOwnershipCommand) -> Result<(), ApplicationError> {
         let now = Utc::now();
-        let has_active_ownership = self.repository.has_active_ownership(cmd.vehicle_id).await?;
+        let has_active_ownership = self.repository.has_open_ownership(cmd.vehicle_id).await?;
         let snapshot = OwnershipEligibilitySnapshot::new(cmd.vehicle_id, has_active_ownership);
         let ownership = VehicleOwnership::start(
             cmd.ownership_id,
