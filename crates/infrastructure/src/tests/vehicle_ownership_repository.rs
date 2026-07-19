@@ -1,11 +1,15 @@
 #[cfg(test)]
 mod tests {
+    use std::sync::Arc;
+
     use crate::vehicle_ownership_repository::InMemoryVehicleOwnershipRepository;
-    use application::error::RepositoryError;
+    use application::error::{ApplicationError, RepositoryError};
+    use application::ownership::commands::StartVehicleOwnershipCommand;
+    use application::ownership::handlers::StartVehicleOwnershipHandler;
     use application::ownership::ports::VehicleOwnershipRepository;
     use chrono::Utc;
     use domain::vehicle_ownership::{
-        OwnershipEligibilitySnapshot, OwnershipType, VehicleOwnership,
+        OwnershipEligibilitySnapshot, OwnershipError, OwnershipType, VehicleOwnership,
     };
     use domain::{CustomerId, VehicleId, VehicleOwnershipId};
 
@@ -160,5 +164,46 @@ mod tests {
             .expect("repository check should succeed");
 
         assert!(!has_open_ownership);
+    }
+
+    // Test to ensure that the second start of ownership on the same vehicle is rejected by the real repository
+    #[tokio::test()]
+    async fn second_start_on_same_vehicle_is_rejected_by_real_repository() {
+        let repository = Arc::new(InMemoryVehicleOwnershipRepository::new());
+
+        let handler = StartVehicleOwnershipHandler::new(
+            Arc::clone(&repository) as Arc<dyn VehicleOwnershipRepository>
+        );
+
+        let vehicle_id = VehicleId::new();
+
+        let first_command = StartVehicleOwnershipCommand {
+            ownership_id: VehicleOwnershipId::new(),
+            vehicle_id,
+            owner_customer_id: CustomerId::new(),
+            ownership_type: OwnershipType::Private,
+        };
+
+        handler
+            .handle(first_command)
+            .await
+            .expect("firs ownership should start successfully");
+
+        let seccond_command = StartVehicleOwnershipCommand {
+            ownership_id: VehicleOwnershipId::new(),
+            vehicle_id,
+            owner_customer_id: CustomerId::new(),
+            ownership_type: OwnershipType::Private,
+        };
+
+        let error = handler
+            .handle(seccond_command)
+            .await
+            .expect_err("second active ownership for the same vehicle must be rejected");
+
+        assert!(matches!(
+            error,
+            ApplicationError::Ownership(OwnershipError::ActiveOwnershipAlreadyExists)
+        ));
     }
 }
