@@ -113,6 +113,7 @@ dependencies = [
  "domain",
  "infrastructure",
  "serde",
+ "serde_json",
  "tokio",
  "tower-http",
  "tracing",

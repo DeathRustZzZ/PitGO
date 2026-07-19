@@ -125,6 +125,6 @@ pub async fn get_vehicle(
             created_at: vehicle.created_at(),
             updated_at: vehicle.updated_at(),
         })),
-        None => Err(ApiError::not_found("Vehicle not found.")),
+        None => Err(ApiError::vehicle_not_found()),
     }
 }
