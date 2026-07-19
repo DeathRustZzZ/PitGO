@@ -1,3 +1,25 @@
+//! Unit tests for the [`VehicleOwnership`] aggregate.
+//!
+//! Exercise the full state machine — `start → verify → end` — and the rules
+//! that guard it: that `start` refuses an occupied vehicle, that `verify` and
+//! `end` are idempotent on their own target status but reject transitions the
+//! machine forbids, and that a terminal `Ended` record can never be revived.
+//!
+//! Also cover the ordering guarantee in `end`: when the period cannot be closed
+//! the whole command fails and the aggregate is left untouched, rather than
+//! ending up half-modified.
+//!
+//! Юнит-тесты агрегата [`VehicleOwnership`].
+//!
+//! Проверяют полную машину состояний — `start → verify → end` — и охраняющие её
+//! правила: `start` отклоняет занятый автомобиль; `verify` и `end` идемпотентны
+//! относительно собственного целевого статуса, но отклоняют запрещённые машиной
+//! переходы; терминальную запись `Ended` невозможно оживить.
+//!
+//! Также покрывают гарантию порядка в `end`: если период не удаётся закрыть,
+//! вся команда завершается ошибкой, а агрегат остаётся нетронутым, а не
+//! наполовину изменённым.
+
 use chrono::Duration;
 
 use shared::aggregate::ChangeOutcome;

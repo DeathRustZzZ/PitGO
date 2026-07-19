@@ -1,3 +1,24 @@
+//! Unit tests for the [`Customer`] aggregate.
+//!
+//! Cover three things the aggregate must guarantee: that each accepted command
+//! raises exactly one event and advances the version by one, that activation is
+//! idempotent rather than an error when the customer is already `Active`, and
+//! that every local permit condition — id, version and expiry — is actually
+//! enforced.
+//!
+//! The tests run without any runtime or repository, which is the practical
+//! payoff of keeping the domain free of I/O.
+//!
+//! Юнит-тесты агрегата [`Customer`].
+//!
+//! Покрывают три гарантии агрегата: каждая принятая команда порождает ровно
+//! одно событие и увеличивает версию на единицу; активация идемпотентна, а не
+//! ошибочна, когда клиент уже `Active`; каждое локальное условие permit —
+//! идентификатор, версия и срок действия — действительно проверяется.
+//!
+//! Тесты выполняются без какого-либо рантайма и репозитория — это практическая
+//! выгода от того, что домен свободен от ввода-вывода.
+
 use chrono::Duration;
 
 use shared::aggregate::ChangeOutcome;
