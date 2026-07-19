@@ -175,11 +175,11 @@ impl VehicleOwnershipRepository for InMemoryVehicleOwnershipRepository {
             .lock()
             .map_err(|e| RepositoryError::StorageFailure(e.to_string()))?;
 
-        let has_active = ownerships
+        let has_open = ownerships
             .values()
             .any(|ownership| ownership.vehicle_id() == vehicle_id && ownership.status().is_open());
 
-        Ok(has_active)
+        Ok(has_open)
     }
 }
 

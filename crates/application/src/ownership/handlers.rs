@@ -82,8 +82,8 @@ impl StartVehicleOwnershipHandler {
     /// свободным от неявного обращения к часам.
     pub async fn handle(&self, cmd: StartVehicleOwnershipCommand) -> Result<(), ApplicationError> {
         let now = Utc::now();
-        let has_active_ownership = self.repository.has_open_ownership(cmd.vehicle_id).await?;
-        let snapshot = OwnershipEligibilitySnapshot::new(cmd.vehicle_id, has_active_ownership);
+        let has_open_ownership = self.repository.has_open_ownership(cmd.vehicle_id).await?;
+        let snapshot = OwnershipEligibilitySnapshot::new(cmd.vehicle_id, has_open_ownership);
         let ownership = VehicleOwnership::start(
             cmd.ownership_id,
             cmd.vehicle_id,

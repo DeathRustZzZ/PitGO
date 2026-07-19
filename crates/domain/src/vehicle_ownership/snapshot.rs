@@ -40,27 +40,27 @@ use crate::ids::VehicleId;
 #[derive(Debug, Clone)]
 pub struct OwnershipEligibilitySnapshot {
     vehicle_id: VehicleId,
-    has_active_ownership: bool,
+    has_open_ownership: bool,
 }
 
 impl OwnershipEligibilitySnapshot {
     /// Captures the eligibility facts for a vehicle.
     ///
-    /// `has_active_ownership` must reflect *open* records — both
+    /// `has_open_ownership` must reflect *open* records — both
     /// `PendingVerification` and `Active` — not only confirmed ones. Passing
     /// confirmed-only data here would let a second claim slip past an
     /// unverified first one.
     ///
     /// Фиксирует сведения о пригодности для автомобиля.
     ///
-    /// `has_active_ownership` должен отражать *открытые* записи — как
+    /// `has_open_ownership` должен отражать *открытые* записи — как
     /// `PendingVerification`, так и `Active`, — а не только подтверждённые.
     /// Передача сюда данных только по подтверждённым записям позволила бы
     /// второму притязанию проскользнуть мимо первого, неподтверждённого.
-    pub fn new(vehicle_id: VehicleId, has_active_ownership: bool) -> Self {
+    pub fn new(vehicle_id: VehicleId, has_open_ownership: bool) -> Self {
         Self {
             vehicle_id,
-            has_active_ownership,
+            has_open_ownership,
         }
     }
 
@@ -74,7 +74,7 @@ impl OwnershipEligibilitySnapshot {
     /// Returns `true` if the vehicle currently has no open ownership.
     ///
     /// Возвращает `true`, если у автомобиля сейчас нет открытого владения.
-    pub fn no_active_ownership_exists(&self) -> bool {
-        !self.has_active_ownership
+    pub fn no_open_ownership_exists(&self) -> bool {
+        !self.has_open_ownership
     }
 }
