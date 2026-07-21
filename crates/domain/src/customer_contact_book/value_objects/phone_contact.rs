@@ -1,58 +1,75 @@
-use crate::customer_contact_book::error::PhoneNumberError;
+use chrono::{DateTime, Utc};
+use shared::aggregate::ChangeOutcome;
 
+use crate::customer_contact_book::value_objects::phone_number::PhoneNumber;
+
+/// Контактный телефон клиента и статус его подтверждения.
+///
+/// A customer's phone contact together with its verification status.
 #[derive(Debug)]
 pub struct PhoneContact {
-    phone_number: PhoneNumber,
-    verification_status: VerificationStatus,
+    number: PhoneNumber,
+
+    verification: VerificationStatus,
 }
 
+/// Доверие к контактному номеру.
+///
+/// The trust state of a phone contact.
 #[derive(Debug)]
-enum VerificationStatus {
-    Verified,
+pub enum VerificationStatus {
     Unverified,
+
+    /// Номер был подтверждён в указанное время.
+    ///
+    /// The number was verified at the given time.
+    Verified {
+        verified_at: DateTime<Utc>,
+    },
 }
 
-#[derive(Debug)]
-struct PhoneNumber(String);
-
-impl PhoneNumber {
-    pub fn parse(input_number: &str) -> Result<Self, PhoneNumberError> {
-        let trimmed = input_number.trim();
-
-        if trimmed.is_empty() {
-            return Err(PhoneNumberError::Empty);
+impl PhoneContact {
+    /// Создаёт новый неподтверждённый контакт.
+    ///
+    /// Creates a new unverified phone contact.
+    #[must_use]
+    pub fn new(number: PhoneNumber) -> Self {
+        Self {
+            number,
+            verification: VerificationStatus::Unverified,
         }
-
-        // Один проход по строке собирает только цифры. Это проще и устойчивее,
-        // чем перечислять все допустимые разделители вроде пробелов, скобок и
-        // дефисов: новый визуальный разделитель не сломает валидный номер.
-        let digits: String = trimmed.chars().filter(|ch| ch.is_ascii_digit()).collect();
-
-        // На этом шаге строка уже состоит только из цифр, поэтому проверка
-        // сводится к длине и префиксу. Результат всегда приводится к цифрам без
-        // плюса, а плюс добавляется один раз в самом конце.
-        let normalized_digits = if digits.len() == 12 && digits.starts_with("375") {
-            digits
-        } else if digits.len() == 11 && digits.starts_with("80") {
-            // Локальный белорусский формат `80XXXXXXXXX` переводим в
-            // международный `375XXXXXXXXX`, отбрасывая первые две цифры `80`.
-            format!("375{}", &digits[2..])
-        } else {
-            return Err(PhoneNumberError::InvalidFormat);
-        };
-
-        // Единственная точка создания значения. После нее `PhoneNumber` всегда
-        // хранится одинаково, что упрощает сравнение, хеширование и вывод.
-        Ok(Self(format!("+{}", normalized_digits)))
     }
 
-    pub fn as_str(&self) -> &str {
-        &self.0
+    /// Подтверждает контакт, если он ещё не был подтверждён.
+    ///
+    /// Verifies the contact if it has not been verified already.
+    ///
+    /// Повторное подтверждение ничего не меняет: это делает операцию
+    /// безопасной для повторной доставки команды.
+    ///
+    /// Repeating verification changes nothing, making the operation safe
+    /// to retry after a duplicate command delivery.
+    pub fn verify(&mut self, now: DateTime<Utc>) -> ChangeOutcome {
+        match &self.verification {
+            VerificationStatus::Unverified => {
+                self.verification = VerificationStatus::Verified { verified_at: now };
+                ChangeOutcome::Changed
+            }
+            VerificationStatus::Verified { .. } => ChangeOutcome::NoChange,
+        }
     }
-}
 
-impl std::fmt::Display for PhoneNumber {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.0)
+    /// Возвращает нормализованный номер телефона.
+    ///
+    /// Returns the normalized phone number.
+    pub fn number(&self) -> &PhoneNumber {
+        &self.number
+    }
+
+    /// Возвращает текущий статус подтверждения.
+    ///
+    /// Returns the current verification status.
+    pub fn verification(&self) -> &VerificationStatus {
+        &self.verification
     }
 }
