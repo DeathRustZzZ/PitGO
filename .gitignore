@@ -29,3 +29,5 @@ target/
 .env
 .env.local
 AGENTS.md
+# Graphify generated output
+graphify-out/
