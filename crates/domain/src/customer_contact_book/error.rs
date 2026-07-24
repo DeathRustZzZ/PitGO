@@ -10,3 +10,9 @@ pub enum PhoneNumberError {
     #[error("invalid Belarus phone number format")]
     InvalidFormat,
 }
+
+#[derive(Debug, Clone, PartialEq, Eq, Error)]
+pub enum CustomerContactBookError {
+    #[error("phone contact already exists")]
+    PhoneAlreadyExists,
+}

@@ -3,13 +3,14 @@
 //! Агрегат `CustomerContactBook` — граница контактных данных клиента.
 
 use chrono::{DateTime, Utc};
-use shared::aggregate::AggregateVersion;
+use shared::aggregate::{AggregateVersion, ChangeOutcome};
 use shared::event::PendingEvent;
 
 use crate::{
     customer_contact_book::{
-        event::{CustomerContactBookCreatedV1, CustomerContactBookEvent},
-        value_objects::phone_contact::PhoneContact,
+        error::CustomerContactBookError,
+        event::{CustomerContactBookCreatedV1, CustomerContactBookEvent, PhoneAddedV1},
+        value_objects::{phone_contact::PhoneContact, phone_number::PhoneNumber},
     },
     CustomerId,
 };
@@ -69,6 +70,33 @@ impl CustomerContactBook {
             now,
         );
         contact_book
+    }
+
+    /// Adds the first phone contact.
+    ///
+    /// Добавляет первый телефонный контакт.
+    pub fn add_phone(
+        &mut self,
+        phone_number: PhoneNumber,
+        now: DateTime<Utc>,
+    ) -> Result<ChangeOutcome, CustomerContactBookError> {
+        if self.phone_contact.is_some() {
+            return Err(CustomerContactBookError::PhoneAlreadyExists);
+        }
+
+        let event_phone_number = phone_number.clone();
+
+        self.phone_contact = Some(PhoneContact::new(phone_number));
+
+        self.raise(
+            CustomerContactBookEvent::PhoneAdded(PhoneAddedV1 {
+                customer_id: self.customer_id,
+                phone_number: event_phone_number,
+            }),
+            now,
+        );
+
+        Ok(ChangeOutcome::Changed)
     }
 
     /// Returns the buffered domain events and clears the buffer.

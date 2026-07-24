@@ -1,6 +1,6 @@
 use crate::customer_contact_book::error::PhoneNumberError;
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct PhoneNumber(String);
 
 impl PhoneNumber {
